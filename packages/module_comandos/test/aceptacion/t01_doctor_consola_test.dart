@@ -13,13 +13,13 @@ String _linea(Diagnostico d) =>
 
 final _pasos = StepRegistry<void>.fromMap({
   'la salida de consola:'.mapper(): (_, ctx) async {
-    _salida = ctx.docContent!;
+    _salida = docString(ctx.docContent);
   },
   'la diagnostico'.mapper(): (_, ctx) async {
     _diagnosticos = diagnosticarConsola(_salida);
   },
   'los diagnósticos son:'.mapper(): (_, ctx) async {
-    expect(_diagnosticos.map(_linea).join('\n'), ctx.docContent!.trim());
+    expect(_diagnosticos.map(_linea).join('\n'), docString(ctx.docContent));
   },
   'no hay diagnósticos'.mapper(): (_, ctx) async {
     expect(_diagnosticos, isEmpty);
