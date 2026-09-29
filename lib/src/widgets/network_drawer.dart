@@ -341,7 +341,7 @@ class NetworkDrawer extends StatelessWidget {
                 Text('• Guía metodológica de 5 capas'),
                 SizedBox(height: 12),
                 Text(
-                  'Licencia: PolyForm Noncommercial 1.0.0 (uso comercial solo con acuerdo escrito con el autor). '
+                  '© 2026 Praxia Dynamic. Licencia personal e intransferible: prohibido copiar, compartir o revender. '
                   'Nettia es un proyecto independiente: Cisco, CCNA y Packet Tracer son marcas de sus respectivos propietarios.',
                   style: TextStyle(fontSize: 11.5),
                 ),

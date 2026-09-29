@@ -1,79 +1,88 @@
-Required Notice: Copyright (c) 2026 Técnico Jairo Enrique Luarca Bonilla.
+Copyright (c) 2026 Técnico Jairo Enrique Luarca Bonilla (Praxia Dynamic).
+Todos los derechos reservados.
 
-Uso comercial: requiere una licencia aparte y por escrito con el autor. Ver COMMERCIAL.md.
+# Licencia de uso de Nettia (EULA)
 
-================================================================================
+> Borrador pendiente de revisión legal. Reemplaza a la licencia PolyForm Noncommercial 1.0.0
+> para las versiones publicadas a partir de 2026-09-29.
 
-# PolyForm Noncommercial License 1.0.0
+## 1. Titularidad
 
-<https://polyformproject.org/licenses/noncommercial/1.0.0>
+Nettia (la aplicación, su código fuente, contenidos, diseño y documentación, en adelante el
+"Software") es propiedad de Jairo Enrique Luarca Bonilla, que publica bajo el nombre
+**Praxia Dynamic** (el "Autor"). El Software se **licencia**, no se vende: quien lo obtiene
+recibe solo el derecho de uso descrito aquí, nunca la propiedad ni el código fuente.
 
-## Acceptance
+## 2. Modalidades de licencia
 
-In order to get any license under these terms, you must agree to them as both strict obligations and conditions to all your licenses.
+### 2.1 Licencia de pago
 
-## Copyright License
+Quien adquiere el Software pagando por un canal oficial del Autor (por ejemplo, Google Play)
+recibe una licencia **personal, no exclusiva, intransferible y no sublicenciable** para
+instalar y usar el Software en los dispositivos asociados a su propia cuenta, según las reglas
+de la tienda donde lo compró.
 
-The licensor grants you a copyright license for the software to do everything you might do with the software that would otherwise infringe the licensor's copyright in it for any permitted purpose.  However, you may only distribute the software according to [Distribution License](#distribution-license) and make changes or new works based on the software according to [Changes and New Works License](#changes-and-new-works-license).
+### 2.2 Licencia gratuita para compañeros de estudio
 
-## Distribution License
+El Autor puede entregar el Software **gratis**, de forma personal y directa, a sus compañeros
+de estudio. Esta licencia:
 
-The licensor grants you an additional copyright license to distribute copies of the software.  Your license to distribute covers distributing the software with changes and new works permitted by [Changes and New Works License](#changes-and-new-works-license).
+- solo existe para las personas a quienes el Autor se la entrega **directamente**; recibir una
+  copia de otra persona no otorga ninguna licencia;
+- es **personal, no exclusiva, intransferible y no sublicenciable**, igual que la de pago;
+- permite únicamente el uso personal y académico, nunca el uso comercial;
+- no obliga al Autor a entregarla a nadie ni a mantenerla gratuita en el futuro.
 
-## Notices
+## 3. Lo que NO está permitido (en ambas modalidades)
 
-You must ensure that anyone who gets a copy of any part of the software from you also gets a copy of these terms or the URL for them above, as well as copies of any plain-text lines beginning with `Required Notice:` that the licensor provided with the software.  For example:
+Salvo autorización previa y por escrito del Autor, está prohibido:
 
-> Required Notice: Copyright Yoyodyne, Inc. (http://example.com)
+1. vender, revender, alquilar, prestar, regalar o distribuir de cualquier forma copias del
+   Software o de su instalador (APK/AAB), gratis o con cobro;
+2. compartir el Software con personas que no tengan su propia licencia;
+3. copiar, modificar, traducir o crear obras derivadas del Software;
+4. descompilar, desensamblar o aplicar ingeniería inversa, salvo en la medida en que la ley
+   aplicable lo permita expresamente a pesar de esta limitación;
+5. quitar o alterar avisos de derechos de autor, marcas o esta licencia;
+6. usar el Software para ofrecer un servicio o producto comercial a terceros.
 
-## Changes and New Works License
+## 4. Componentes de terceros
 
-The licensor grants you an additional copyright license to make changes and new works based on the software for any permitted purpose.
+El Software incluye librerías de código abierto que se rigen por sus propias licencias. Se
+pueden consultar en la aplicación, en *Acerca de Nettia → Licencias de terceros*. Nada en esta
+licencia limita los derechos que esas licencias otorgan sobre dichos componentes.
 
-## Patent License
+## 5. Servicios de inteligencia artificial
 
-The licensor grants you a patent license for the software that covers patent claims the licensor can license, or becomes able to license, that you would infringe by using the software.
+El asistente NETIA usa proveedores de IA externos con la clave (API key) que el propio usuario
+configura. El uso de esos servicios se rige por los términos de cada proveedor y su costo, si
+lo hay, corre por cuenta del usuario. Las respuestas de la IA pueden contener errores y deben
+verificarse antes de aplicarse en equipos reales.
 
-## Noncommercial Purposes
+## 6. Sin garantía
 
-Any noncommercial purpose is a permitted purpose.
+**En la máxima medida que permita la ley, el Software se entrega "tal cual", sin garantía de
+ningún tipo.** Los cálculos, configuraciones y comandos que genera son una ayuda de estudio y
+de trabajo; el usuario es responsable de verificarlos antes de usarlos en redes reales.
 
-## Personal Uses
+## 7. Limitación de responsabilidad
 
-Personal use for research, experiment, and testing for the benefit of public knowledge, personal study, private entertainment, hobby projects, amateur pursuits, or religious observance, without any anticipated commercial application, is use for a permitted purpose.
+**En la máxima medida que permita la ley, el Autor no será responsable de daños directos o
+indirectos, pérdida de datos, interrupciones de red ni perjuicios de ningún tipo derivados del
+uso o de la imposibilidad de uso del Software.** Cuando la ley no permita excluir esa
+responsabilidad, quedará limitada al importe pagado por la licencia (o a cero, en la licencia
+gratuita).
 
-## Noncommercial Organizations
+## 8. Terminación
 
-Use by any charitable organization, educational institution, public research organization, public safety or health organization, environmental protection organization, or government institution is use for a permitted purpose regardless of the source of funding or obligations resulting from the funding.
+La licencia termina automáticamente si se incumple cualquiera de sus términos. Al terminar,
+el usuario debe dejar de usar el Software y borrar todas sus copias.
 
-## Fair Use
+## 9. Marcas
 
-You may have "fair use" rights for the software under the law. These terms do not limit them.
+Cisco, CCNA y Packet Tracer son marcas de sus respectivos propietarios. Nettia es un proyecto
+independiente, sin relación ni respaldo de esas empresas.
 
-## No Other Rights
+## 10. Contacto
 
-These terms do not allow you to sublicense or transfer any of your licenses to anyone else, or prevent the licensor from granting licenses to anyone else.  These terms do not imply any other licenses.
-
-## Patent Defense
-
-If you make any written claim that the software infringes or contributes to infringement of any patent, your patent license for the software granted under these terms ends immediately. If your company makes such a claim, your patent license ends immediately for work on behalf of your company.
-
-## Violations
-
-The first time you are notified in writing that you have violated any of these terms, or done anything with the software not covered by your licenses, your licenses can nonetheless continue if you come into full compliance with these terms, and take practical steps to correct past violations, within 32 days of receiving notice.  Otherwise, all your licenses end immediately.
-
-## No Liability
-
-***As far as the law allows, the software comes as is, without any warranty or condition, and the licensor will not be liable to you for any damages arising out of these terms or the use or nature of the software, under any kind of legal claim.***
-
-## Definitions
-
-The **licensor** is the individual or entity offering these terms, and the **software** is the software the licensor makes available under these terms.
-
-**You** refers to the individual or entity agreeing to these terms.
-
-**Your company** is any legal entity, sole proprietorship, or other kind of organization that you work for, plus all organizations that have control over, are under the control of, or are under common control with that organization.  **Control** means ownership of substantially all the assets of an entity, or the power to direct its management and policies by vote, contract, or otherwise.  Control can be direct or indirect.
-
-**Your licenses** are all the licenses granted to you for the software under these terms.
-
-**Use** means anything you do with the software requiring one of your licenses.
+Autorizaciones, acuerdos comerciales y consultas: **jb.luarca01@gmail.com** (ver `COMMERCIAL.md`).

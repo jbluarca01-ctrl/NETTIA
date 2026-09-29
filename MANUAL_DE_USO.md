@@ -15,7 +15,7 @@
 - **Módulos:** Calculadora de Subredes, Comandos CLI & Plantillas, Asistente NETIA, Guía Metodológica.
 - **Sistema:** Configuración & IA y "Acerca de Nettia".
 - El punto verde/ámbar bajo el nombre indica si el asistente está **en línea** (con clave de IA) o en **modo offline**.
-- **Acerca de Nettia:** resumen, licencia (PolyForm Noncommercial), aviso de que Cisco/CCNA/Packet Tracer son marcas de sus dueños y botón **Licencias de terceros** (pantalla estándar de Flutter con las licencias de las librerías).
+- **Acerca de Nettia:** resumen, licencia (propietaria: venta y copia gratuita solo para compañeros del autor, sin redistribución), aviso de que Cisco/CCNA/Packet Tracer son marcas de sus dueños y botón **Licencias de terceros** (pantalla estándar de Flutter con las licencias de las librerías).
 
 ## 3. Configuración & Sistema (⚙ arriba a la derecha)
 - **Perfil de uso:** Estudiante / Profesional.

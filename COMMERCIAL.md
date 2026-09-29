@@ -1,11 +1,12 @@
-# Licencia comercial de Nettia
+# Acuerdos comerciales con terceros sobre Nettia
 
-Nettia es gratuita para uso **no comercial** (estudiantes, docentes, instituciones educativas,
-uso personal e investigación) bajo la licencia PolyForm Noncommercial 1.0.0 (ver `LICENSE`).
+Nettia se distribuye bajo una licencia propietaria (ver `LICENSE`): el Autor (Praxia Dynamic)
+la vende a usuarios finales y la regala únicamente a sus compañeros de estudio. Ninguna de esas
+dos licencias permite a un tercero explotarla comercialmente.
 
-Cualquier **uso comercial** queda fuera de esa licencia. Eso incluye vender la aplicación o una
-obra derivada, cobrar por acceso a ella, incluirla en un producto o servicio de pago, o usarla
-para obtener ingresos.
+Cualquier **explotación comercial por un tercero** requiere un acuerdo aparte y por escrito.
+Eso incluye revender o distribuir la aplicación o una obra derivada, cobrar por acceso a ella,
+incluirla en un producto o servicio de pago, o usarla para obtener ingresos.
 
 ## Cómo obtener una licencia comercial
 Escribe al autor (Técnico Jairo Enrique Luarca Bonilla) a **jb.luarca01@gmail.com** antes de
@@ -28,4 +29,4 @@ cualquier uso comercial. Se firma un acuerdo por escrito.
 - Rendición de cuentas trimestral por escrito, con derecho del autor a auditar los registros
   contables relacionados una vez al año.
 - Sin licencia comercial firmada, cualquier uso comercial es un incumplimiento de la licencia y
-  la licencia no comercial termina automáticamente.
+  cualquier licencia de uso que tenga termina automáticamente.
