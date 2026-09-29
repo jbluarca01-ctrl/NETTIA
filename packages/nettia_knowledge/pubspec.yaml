@@ -1,0 +1,30 @@
+name: nettia_knowledge
+description: "Base de conocimiento offline de Nettia: corpus curado, índice FTS5 en memoria y búsqueda por perfil."
+publish_to: "none"
+version: 0.1.0
+
+environment:
+  sdk: ">=3.7.0 <4.0.0"
+
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+  nettia_core:
+    path: ../nettia_core
+  sqlite3: ^3.6.0
+  # Sin esta dependencia, package:sqlite3 no tiene el .so nativo para abrir
+  # una base en Android (dlopen falla): causa raíz real de los congelamientos
+  # y cierres reportados en Nettia (ver informes/INFORME_INVESTIGACION_
+  # NETTIA_CONGELAMIENTOS_IA_2026-09-25.md).
+  sqlite3_flutter_libs: ^0.5.32
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  assets:
+    - assets/corpus.json

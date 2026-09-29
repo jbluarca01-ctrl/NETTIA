@@ -1,0 +1,41 @@
+name: nettia
+description: "Nettia: calculadora de subredes, comandos CLI, guía de configuración y asistente de redes con IA."
+publish_to: "none"
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.7.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  nettia_core:
+    path: packages/nettia_core
+  nettia_ai:
+    path: packages/nettia_ai
+  module_calculadora:
+    path: packages/module_calculadora
+  module_comandos:
+    path: packages/module_comandos
+  module_guia:
+    path: packages/module_guia
+  module_asistente:
+    path: packages/module_asistente
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  shared_preferences: ^2.3.5
+
+flutter:
+  uses-material-design: true
+
+workspace:
+  - packages/nettia_core
+  - packages/nettia_ai
+  - packages/nettia_knowledge
+  - packages/module_calculadora
+  - packages/module_comandos
+  - packages/module_guia
+  - packages/module_asistente

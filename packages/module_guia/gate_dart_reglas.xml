@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+  <rules>
+    <!-- if con llaves: condición forzada a true / false (equivale a REMOVE_CONDITIONALS de PIT).
+         La condición no puede cruzar { } ni ; (evita desbordarse a otra función). -->
+    <regex pattern="[\s]if[\s]*\(([^{};]*?)\)[\s]*{" dotAll="true" id="gate.if.true">
+      <mutation text=" if (true) {"/>
+    </regex>
+    <regex pattern="[\s]if[\s]*\(([^{};]*?)\)[\s]*{" dotAll="true" id="gate.if.false">
+      <mutation text=" if (false) {"/>
+    </regex>
+    <!-- if sin llaves y collection-if: [ if (c) 'b' ]  (condición sin paréntesis anidados). -->
+    <regex pattern="[\s\[,]if[\s]*\(([^()]*)\)[\s]*(?=[^{\s])" id="gate.ifnobrace.true">
+      <mutation text=" if (true) "/>
+    </regex>
+    <regex pattern="[\s\[,]if[\s]*\(([^()]*)\)[\s]*(?=[^{\s])" id="gate.ifnobrace.false">
+      <mutation text=" if (false) "/>
+    </regex>
+    <!-- Ternario en un return: condición forzada. -->
+    <regex pattern="(return\s+)([^?;\n]+?)\s*\?\s*([^:;\n]+?)\s*:" id="gate.ternary.true">
+      <mutation text="$1true ? $3 :"/>
+    </regex>
+    <regex pattern="(return\s+)([^?;\n]+?)\s*\?\s*([^:;\n]+?)\s*:" id="gate.ternary.false">
+      <mutation text="$1false ? $3 :"/>
+    </regex>
+    <!-- Valor de return alterado (equivale a los *_RETURNS de PIT). OJO: mutation_test NO sustituye
+         $2 si va pegado a $1 ("$1$2"); siempre separar con un espacio u otro carácter. -->
+    <regex pattern="(return\s+)(&apos;[^&apos;\n]*&apos;|&quot;[^&quot;\n]*&quot;)\s*;" id="gate.return.string">
+      <mutation text="$1 $2 + &apos;x&apos;;"/>
+    </regex>
+    <regex pattern="(return\s+)(-?[0-9]+)\s*;" id="gate.return.int">
+      <mutation text="$1 $2 + 1;"/>
+    </regex>
+    <regex pattern="(return\s+)(true|false)\s*;" id="gate.return.bool">
+      <mutation text="$1 !$2;"/>
+    </regex>
+    <!-- Valor por defecto de ?? alterado. -->
+    <regex pattern="(\?\?\s*)(&apos;[^&apos;\n]*&apos;|&quot;[^&quot;\n]*&quot;)" id="gate.nullaware.string">
+      <mutation text="$1 $2 + &apos;x&apos;"/>
+    </regex>
+    <regex pattern="(\?\?\s*)(-?[0-9]+)" id="gate.nullaware.int">
+      <mutation text="$1 ($2 + 1)"/>
+    </regex>
+    <!-- Valor de ??= alterado. -->
+    <regex pattern="(\?\?=\s*)(&apos;[^&apos;\n]*&apos;|&quot;[^&quot;\n]*&quot;)" id="gate.nullassign.string">
+      <mutation text="$1 $2 + &apos;x&apos;"/>
+    </regex>
+    <regex pattern="(\?\?=\s*)(-?[0-9]+)" id="gate.nullassign.int">
+      <mutation text="$1 ($2 + 1)"/>
+    </regex>
+    <!-- Acceso null-aware: ?. -> !. (sobrevive si nunca se prueba el caso nulo). -->
+    <regex pattern="\?\." id="gate.nullaware.access">
+      <mutation text="!."/>
+    </regex>
+    <!-- Inicializador late con literal alterado (sobrevive si nunca se evalúa). -->
+    <regex pattern="(late\s+[^=;\n]*=\s*)(&apos;[^&apos;\n]*&apos;|&quot;[^&quot;\n]*&quot;)" id="gate.late.string">
+      <mutation text="$1 $2 + &apos;x&apos;"/>
+    </regex>
+    <regex pattern="(late\s+[^=;\n]*=\s*)(-?[0-9]+)" id="gate.late.int">
+      <mutation text="$1 ($2 + 1)"/>
+    </regex>
+  </rules>
+</mutations>

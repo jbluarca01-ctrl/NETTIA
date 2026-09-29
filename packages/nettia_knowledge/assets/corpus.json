@@ -1,0 +1,1390 @@
+[
+  {
+    "id": "acl-aplicar-a-interfaz",
+    "tema": "acl",
+    "subtema": "aplicacion",
+    "titulo": "Aplicar una ACL a una interfaz (in/out) y verificarla",
+    "nivel": "basico",
+    "plataforma": "ios",
+    "version": "IOS 15.M&T / IOS XE",
+    "protocolo": "acl",
+    "audiencia": [
+      "estudiante",
+      "profesional"
+    ],
+    "idioma": "es",
+    "estado": "publicado",
+    "verificacion": "fuentes-cruzadas",
+    "comandos_probados": false,
+    "fecha_revision": "2026-09-27",
+    "revisado_por": "Claude (fuentes cruzadas); sin prueba en equipo",
+    "fuentes": [
+      {
+        "titulo": "Cisco IOS XE 16.9.x - Security Configuration Guide: Access Control Lists",
+        "ubicacion": "Creating an IP Access List and Applying It to an Interface",
+        "url": "https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/sec_data_acl/configuration/xe-16-9/sec-data-acl-xe-16-9-book/sec-create-ip-apply.html"
+      },
+      {
+        "titulo": "Cisco IOS XE 3S - Security Configuration Guide: Access Control Lists",
+        "ubicacion": "IP Access List Overview",
+        "url": "https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/sec_data_acl/configuration/xe-3s/sec-data-acl-xe-3s-book/sec-access-list-ov.html"
+      }
+    ],
+    "palabras_clave": [
+      "ip access-group",
+      "acl in out",
+      "aplicar acl a interfaz",
+      "una acl por interfaz por protocolo por direccion",
+      "show access-lists"
+    ],
+    "contenido": "Una ACL (numerada o con nombre) no filtra nada hasta que se aplica a una interfaz con una dirección:\n\n```\ninterface GigabitEthernet0/1\n ip access-group 101 in\n```\n\n- **`in`**: filtra el tráfico que **entra** por esa interfaz, antes de que el router decida por dónde enrutarlo.\n- **`out`**: filtra el tráfico que **sale** por esa interfaz, después de que ya se tomó la decisión de ruteo.\n\n**Regla clave:** solo se puede aplicar **una ACL por interfaz, por protocolo (ej. IPv4) y por dirección** (`in` u `out`). Si necesitas filtrar en ambos sentidos de la misma interfaz, son dos ACL distintas: una para `in` y otra para `out`.\n\n```\ninterface GigabitEthernet0/1\n ip access-group ENTRADA-LAN in\n ip access-group SALIDA-LAN out\n```\n\nVerificación:\n```\nRouter# show access-lists\nRouter# show ip interface GigabitEthernet0/1\n```\n`show access-lists` muestra, entre otras cosas, cuántos paquetes coincidieron con cada línea (útil para confirmar que el `deny` implícito o explícito realmente se está disparando). `show ip interface` confirma qué ACL está aplicada y en qué sentido en esa interfaz puntual."
+  },
+  {
+    "id": "acl-conceptos-evaluacion-wildcard",
+    "tema": "acl",
+    "subtema": "conceptos",
+    "titulo": "Cómo se evalúa una ACL y qué es una wildcard mask",
+    "nivel": "basico",
+    "plataforma": "generico",
+    "version": "IOS 15.M&T / IOS XE",
+    "protocolo": "acl",
+    "audiencia": [
+      "estudiante",
+      "profesional"
+    ],
+    "idioma": "es",
+    "estado": "publicado",
+    "verificacion": "fuentes-cruzadas",
+    "comandos_probados": false,
+    "fecha_revision": "2026-09-27",
+    "revisado_por": "Claude (fuentes cruzadas); sin prueba en equipo",
+    "fuentes": [
+      {
+        "titulo": "Cisco IOS Release 15M&T - Security Configuration Guide: Access Control Lists",
+        "ubicacion": "IP Access List Overview",
+        "url": "https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/sec_data_acl/configuration/15-mt/sec-data-acl-15-mt-book/sec-access-list-ov.html"
+      },
+      {
+        "titulo": "Cisco IOS XE 3S - Security Configuration Guide: Access Control Lists",
+        "ubicacion": "IP Access List Overview",
+        "url": "https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/sec_data_acl/configuration/xe-3s/sec-data-acl-xe-3s-book/sec-access-list-ov.html"
+      }
+    ],
+    "palabras_clave": [
+      "acl",
+      "access list",
+      "wildcard mask",
+      "mascara inversa",
+      "implicit deny",
+      "deny implicito",
+      "evaluacion secuencial",
+      "primera coincidencia"
+    ],
+    "contenido": "Una ACL se evalúa **línea por línea, de arriba hacia abajo**. En cuanto una línea coincide con el paquete, el router aplica esa acción (`permit` o `deny`) y **deja de revisar el resto de las líneas** — el orden importa: una línea más específica colocada después de una más general nunca se llega a evaluar para los paquetes que ya coincidieron arriba.\n\nSi un paquete no coincide con ninguna línea escrita, cae en un **`deny` implícito** al final de toda ACL (no aparece en la configuración, pero siempre está ahí). Cisco recomienda escribir un `deny` explícito al final (por ejemplo `deny ip any any log`) para poder ver en los contadores cuánto tráfico se está descartando por esa razón.\n\n**Wildcard mask** (a veces llamada \"máscara inversa\"): es la máscara que usan las ACL (y OSPF) para decidir qué bits de una dirección deben coincidir exactamente y cuáles no importan:\n- Bit en **0** → ese bit de la dirección **debe coincidir**.\n- Bit en **1** → ese bit **no importa** (se ignora).\n\n```\n! Estas dos líneas son equivalentes:\naccess-list 1 permit host 192.168.10.1\naccess-list 1 permit 192.168.10.1 0.0.0.0\n\n! Para una red completa 192.168.10.0/24, la wildcard es la inversa de la máscara:\n! 255.255.255.0  →  wildcard  0.0.0.255\naccess-list 101 permit ip 192.168.10.0 0.0.0.255 any\n```\n\nSi no escribes una wildcard mask junto a una dirección, IOS asume `0.0.0.0` (todos los bits deben coincidir, es decir, esa IP exacta) — por eso `host 192.168.10.1` es equivalente a `192.168.10.1 0.0.0.0`.\n\nVerificación (una vez aplicada a una interfaz, ver el fragmento de aplicación):\n```\nRouter# show access-lists\n```"
+  },
+  {
+    "id": "acl-estandar-vs-extendida",
+    "tema": "acl",
+    "subtema": "tipos",
+    "titulo": "ACL estándar vs. extendida, numeradas y con nombre",
+    "nivel": "basico",
+    "plataforma": "ios",
+    "version": "IOS 15.M&T / IOS XE",
+    "protocolo": "acl",
+    "audiencia": [
+      "estudiante",
+      "profesional"
+    ],
+    "idioma": "es",
+    "estado": "publicado",
+    "verificacion": "fuentes-cruzadas",
+    "comandos_probados": false,
+    "fecha_revision": "2026-09-27",
+    "revisado_por": "Claude (fuentes cruzadas); sin prueba en equipo",
+    "fuentes": [
+      {
+        "titulo": "Cisco IOS Release 15M&T - Security Configuration Guide: Access Control Lists",
+        "ubicacion": "IP Access List Overview",
+        "url": "https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/sec_data_acl/configuration/15-mt/sec-data-acl-15-mt-book/sec-access-list-ov.html"
+      },
+      {
+        "titulo": "Cisco IOS XE 16.9.x - Security Configuration Guide: Access Control Lists",
+        "ubicacion": "Creating an IP Access List and Applying It to an Interface",
+        "url": "https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/sec_data_acl/configuration/xe-16-9/sec-data-acl-xe-16-9-book/sec-create-ip-apply.html"
+      },
+      {
+        "titulo": "Cisco - Configure Commonly Used IP ACLs",
+        "ubicacion": "Standard and extended ACL examples",
+        "url": "https://www.cisco.com/c/en/us/support/docs/ip/access-lists/26448-ACLsamples.html"
+      }
+    ],
+    "palabras_clave": [
+      "acl estandar",
+      "acl extendida",
+      "access-list numerada",
+      "ip access-list standard",
+      "ip access-list extended",
+      "rango acl",
+      "acl con nombre"
+    ],
+    "contenido": "**ACL estándar:** solo filtra por **dirección IP de origen**. Rango numerado clásico **1–99**, ampliado a **1300–1999**.\n```\naccess-list 1 permit 192.168.10.0 0.0.0.255\n```\n\n**ACL extendida:** filtra por **origen, destino, protocolo y puerto/tipo de mensaje** (más específica y más usada en la práctica). Rango numerado clásico **100–199**, ampliado a **2000–2699**.\n```\naccess-list 101 permit ip 192.168.10.0 0.0.0.255 192.168.200.0 0.0.0.255\naccess-list 102 deny tcp any any eq 23\naccess-list 102 permit ip any any\n```\n\n**ACL con nombre:** en vez de un número, se identifica con un nombre descriptivo. Se editan dentro de un submodo, lo que permite **borrar una sola línea** (con `no permit ...` / `no deny ...`) sin recrear toda la lista — algo que las numeradas clásicas no permiten sin usar números de secuencia.\n```\nip access-list standard SOLO-VENTAS\n permit 192.168.10.0 0.0.0.255\n!\nip access-list extended BLOQUEA-TELNET\n deny tcp any any eq 23\n permit ip any any\n```\n\nLas ACL con nombre están disponibles desde IOS 11.2 en adelante y también admiten filtrar por flags de TCP y opciones de IP, algo que las numeradas más antiguas no cubren igual de bien.\n\nVerificación:\n```\nRouter# show access-lists\nRouter# show ip access-lists SOLO-VENTAS\n```"
+  },
+  {
+    "id": "cloud-modelos-servicio-despliegue",
+    "tema": "cloud",
+    "subtema": "conceptos",
+    "titulo": "\"Nube: 5 características, modelos IaaS/PaaS/SaaS y tipos de despliegue\"",
+    "nivel": "basico",
+    "plataforma": "generico",
+    "version": "NIST SP 800-145",
+    "protocolo": "cloud",
+    "audiencia": [
+      "estudiante",
+      "profesional"
+    ],
+    "idioma": "es",
+    "estado": "publicado",
+    "verificacion": "fuentes-cruzadas",
+    "comandos_probados": false,
+    "fecha_revision": "2026-09-27",
+    "revisado_por": "Claude (fuentes cruzadas); sin prueba en equipo",
+    "fuentes": [
+      {
+        "titulo": "NIST SP 800-145 - The NIST Definition of Cloud Computing",
+        "ubicacion": "§2 Essential Characteristics, Service Models, Deployment Models",
+        "url": "https://nvlpubs.nist.gov/nistpubs/legacy/sp/nistspecialpublication800-145.pdf"
+      },
+      {
+        "titulo": "Cisco - What is Cloud Computing?",
+        "ubicacion": "Cloud service and deployment models",
+        "url": "https://www.cisco.com/c/en_uk/solutions/cloud/what-is-cloud-computing.html"
+      }
+    ],
+    "palabras_clave": [
+      "cloud",
+      "nube",
+      "iaas",
+      "paas",
+      "saas",
+      "nube publica",
+      "nube privada",
+      "nube hibrida",
+      "nube comunitaria",
+      "elasticidad",
+      "autoservicio",
+      "nist 800-145"
+    ],
+    "contenido": "La definición de referencia (NIST SP 800-145) dice que un servicio es \"nube\" si cumple **5 características esenciales**:\n\n| Característica | Qué significa |\n|---|---|\n| Autoservicio bajo demanda | El cliente se asigna recursos solo, sin hablar con nadie del proveedor. |\n| Acceso amplio por red | Se usa por la red con mecanismos estándar, desde distintos dispositivos. |\n| Pool de recursos | El proveedor comparte su hardware entre muchos clientes (multi-tenant). |\n| Elasticidad rápida | Los recursos crecen o se reducen rápido según la demanda. |\n| Servicio medido | El uso se mide (y normalmente se cobra) automáticamente. |\n\n**Modelos de servicio** (la diferencia es **qué controla el cliente**):\n- **IaaS** (infraestructura): el cliente maneja sistema operativo, middleware, aplicaciones y datos; el proveedor, los servidores, el almacenamiento, la red y la virtualización. Ej.: alquilar máquinas virtuales.\n- **PaaS** (plataforma): el cliente solo despliega **sus aplicaciones**; el proveedor maneja también el sistema operativo y el middleware.\n- **SaaS** (software): el cliente solo **usa la aplicación** (y ajusta su configuración de usuario); todo lo demás es del proveedor. Ej.: correo web.\n\n**Modelos de despliegue:**\n- **Privada:** para una sola organización.\n- **Comunitaria:** compartida por varias organizaciones con necesidades comunes.\n- **Pública:** abierta al público general, operada por un proveedor.\n- **Híbrida:** combinación de dos o más de las anteriores, conectadas pero que siguen siendo nubes distintas."
+  },
+  {
+    "id": "dhcp-relay-ip-helper-address",
+    "tema": "dhcp",
+    "subtema": "relay",
+    "titulo": "\"DHCP relay: por qué se necesita ip helper-address y dónde se configura\"",
+    "nivel": "intermedio",
+    "plataforma": "ios",
+    "version": "IOS 15S",
+    "protocolo": "dhcp",
+    "audiencia": [
+      "estudiante",
+      "profesional"
+    ],
+    "idioma": "es",
+    "estado": "publicado",
+    "verificacion": "fuentes-cruzadas",
+    "comandos_probados": false,
+    "fecha_revision": "2026-09-27",
+    "revisado_por": "Claude (fuentes cruzadas); sin prueba en equipo",
+    "fuentes": [
+      {
+        "titulo": "Cisco IOS Release 15S - IP Addressing DHCP Configuration Guide",
+        "ubicacion": "Configuring the Cisco IOS DHCP Relay Agent",
+        "url": "https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/ipaddr_dhcp/configuration/15-s/dhcp-15-s-book/dhcp-relay-agent.html"
+      },
+      {
+        "titulo": "Cisco IOS Release 15SY - IP Addressing DHCP Configuration Guide",
+        "ubicacion": "Configuring the Cisco IOS DHCP Relay Agent",
+        "url": "https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/ipaddr_dhcp/configuration/15-sy/dhcp-15-sy-book/dhcp-relay-agent.html"
+      }
+    ],
+    "palabras_clave": [
+      "ip helper-address",
+      "dhcp relay",
+      "giaddr",
+      "broadcast dhcp",
+      "dhcp entre subredes"
+    ],
+    "contenido": "Un cliente DHCP manda su solicitud como **broadcast** en su propia LAN — y un broadcast **no cruza routers**. Si el servidor DHCP está en otra subred, el router que conecta al cliente necesita actuar como **agente de relay** para reenviar esa solicitud como unicast hacia el servidor.\n\n```\ninterface GigabitEthernet0/1\n ip address 192.168.1.1 255.255.255.0\n ip helper-address 10.0.0.100\n```\n\n- `ip helper-address` se configura **en la interfaz que recibe el broadcast del cliente** (la que da hacia la LAN de los clientes), no en la que va hacia el servidor.\n- El agente de relay solo se activa en esa interfaz cuando este comando está presente; sin él, el router simplemente descarta el broadcast DHCP/BOOTP.\n- Al reenviar la solicitud, el router escribe su propia IP (la de esa interfaz) en el campo **`giaddr`** del paquete DHCP — así el servidor sabe de qué subred vino la petición y qué pool usar para responder.\n\nVerificación:\n```\nRouter# show ip interface GigabitEthernet0/1\n```\n(la salida debe mostrar la dirección configurada en \"Helper address\")."
+  },
+  {
+    "id": "dhcp-servidor-pool-exclusion",
+    "tema": "dhcp",
+    "subtema": "servidor",
+    "titulo": "Configurar un router IOS como servidor DHCP (pool y exclusiones)",
+    "nivel": "basico",
+    "plataforma": "ios",
+    "version": "IOS 15.M&T",
+    "protocolo": "dhcp",
+    "audiencia": [
+      "estudiante",
+      "profesional"
+    ],
+    "idioma": "es",
+    "estado": "publicado",
+    "verificacion": "fuentes-cruzadas",
+    "comandos_probados": false,
+    "fecha_revision": "2026-09-27",
+    "revisado_por": "Claude (fuentes cruzadas); sin prueba en equipo",
+    "fuentes": [
+      {
+        "titulo": "Cisco IOS Release 15M&T - IP Addressing DHCP Configuration Guide",
+        "ubicacion": "Configuring the Cisco IOS DHCP Server",
+        "url": "https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/ipaddr_dhcp/configuration/15-mt/dhcp-15-mt-book/config-dhcp-server.html"
+      },
+      {
+        "titulo": "Cisco IOS XE 17.x - IP Addressing Configuration Guide",
+        "ubicacion": "Configuring the Cisco IOS XE DHCP Server",
+        "url": "https://www.cisco.com/c/en/us/td/docs/routers/ios/config/17-x/ip-addressing/b-ip-addressing/m_config-dhcp-server-xe.html"
+      }
+    ],
+    "palabras_clave": [
+      "ip dhcp pool",
+      "ip dhcp excluded-address",
+      "default-router",
+      "dns-server",
+      "lease",
+      "dhcp server ios"
+    ],
+    "contenido": "```\nip dhcp excluded-address 192.168.1.1 192.168.1.10\n!\nip dhcp pool LAN-VENTAS\n network 192.168.1.0 255.255.255.0\n default-router 192.168.1.1\n dns-server 8.8.8.8 8.8.4.4\n lease 2\n```\n\n- **`ip dhcp excluded-address`** se configura en modo global, **antes** de definir el pool, y evita que el servidor reparta direcciones que ya usan otros equipos (routers, switches de gestión, servidores). La IP configurada directamente en la interfaz del router **se excluye sola**, pero cualquier otra IP fija sí hay que excluirla a mano.\n- **`network`** define el rango completo del que salen las direcciones a repartir.\n- **`default-router`** y **`dns-server`** aceptan hasta **8 direcciones** cada uno.\n- **`lease [días] [horas] [minutos]`**: si no se configura, el valor por defecto es **un día**.\n\nVerificación:\n```\nRouter# show ip dhcp pool LAN-VENTAS\nRouter# show ip dhcp binding\n```"
+  },
+  {
+    "id": "dns-resolucion-en-el-router",
+    "tema": "dns",
+    "subtema": "resolucion-router",
+    "titulo": "Resolución de nombres en el propio router (ip name-server, domain-lookup)",
+    "nivel": "basico",
+    "plataforma": "ios",
+    "version": "IOS XE 17.x",
+    "protocolo": "dns",
+    "audiencia": [
+      "estudiante",
+      "profesional"
+    ],
+    "idioma": "es",
+    "estado": "publicado",
+    "verificacion": "fuentes-cruzadas",
+    "comandos_probados": false,
+    "fecha_revision": "2026-09-27",
+    "revisado_por": "Claude (fuentes cruzadas); sin prueba en equipo",
+    "fuentes": [
+      {
+        "titulo": "Cisco IOS XE 17.x - IP Addressing Configuration Guide",
+        "ubicacion": "Configuring DNS",
+        "url": "https://www.cisco.com/c/en/us/td/docs/routers/ios/config/17-x/ip-addressing/b-ip-addressing/m_configuring_dns.html"
+      },
+      {
+        "titulo": "Cisco IOS Release 15M&T - IP Addressing DNS Configuration Guide",
+        "ubicacion": "Configuring DNS",
+        "url": "https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/ipaddr_dns/configuration/15-mt/dns-15-mt-book/dns-config-dns.html"
+      }
+    ],
+    "palabras_clave": [
+      "ip name-server",
+      "ip domain lookup",
+      "ip domain name",
+      "dns router",
+      "show hosts",
+      "resolucion de nombres cisco"
+    ],
+    "contenido": "Esto es la resolución DNS que usa **el propio router** para sus comandos (por ejemplo, si escribes `ping servidor.miempresa.com`), no la que reparte el pool DHCP a los clientes (eso va en el fragmento de DHCP).\n\n```\nip domain name miempresa.com\nip name-server 8.8.8.8 8.8.4.4\n```\n\n- La búsqueda de nombres (**domain lookup**) viene **activada por defecto** en IOS. Sin un `ip name-server` configurado, el router igual intenta resolver — mandando la consulta como broadcast a `255.255.255.255`, que normalmente no llega a ningún lado.\n- **`ip name-server`** acepta hasta **6 servidores DNS**.\n- **`ip domain name`** define el sufijo que el router agrega a un nombre sin punto (ej. escribir `switch1` intenta resolver `switch1.miempresa.com`).\n- Un problema clásico de laboratorio: si escribes mal un comando (ej. `shwo run`), IOS no lo reconoce como comando y, al tener domain-lookup activo sin servidor DNS que responda rápido, **se queda \"colgado\" varios segundos** intentando resolverlo como si fuera un hostname. Por eso en muchos labs se desactiva con `no ip domain lookup`.\n\nVerificación:\n```\nRouter# show hosts\n```"
+  },
+  {
+    "id": "etherchannel-modos-lacp-pagp",
+    "tema": "etherchannel",
+    "subtema": "modos",
+    "titulo": "\"Modos de EtherChannel: on, LACP (active/passive) y PAgP (desirable/auto)\"",
+    "nivel": "intermedio",
+    "plataforma": "ios",
+    "version": "IOS XE 17.x",
+    "protocolo": "etherchannel",
+    "audiencia": [
+      "estudiante",
+      "profesional"
+    ],
+    "idioma": "es",
+    "estado": "publicado",
+    "verificacion": "fuentes-cruzadas",
+    "comandos_probados": false,
+    "fecha_revision": "2026-09-27",
+    "revisado_por": "Claude (fuentes cruzadas); sin prueba en equipo",
+    "fuentes": [
+      {
+        "titulo": "Cisco Catalyst 9600 - Layer 2 Configuration Guide, IOS XE Amsterdam 17.3.x",
+        "ubicacion": "Configuring EtherChannels",
+        "url": "https://www.cisco.com/c/en/us/td/docs/switches/lan/catalyst9600/software/release/17-3/configuration_guide/lyr2/b_173_lyr2_9600_cg/configuring_etherchannels.html"
+      },
+      {
+        "titulo": "Cisco Catalyst 9000 - EtherChannel Configuration Guide, IOS XE 17",
+        "ubicacion": "EtherChannel",
+        "url": "https://www.cisco.com/c/en/us/td/docs/switches/lan/c9000/lyr2-fwd/etherchannel/etherchannel-configuration-guide/m_ethernetchannel.html"
+      }
+    ],
+    "palabras_clave": [
+      "etherchannel",
+      "channel-group",
+      "lacp",
+      "pagp",
+      "active",
+      "passive",
+      "desirable",
+      "auto",
+      "on mode",
+      "port-channel"
+    ],
+    "contenido": "`channel-group [número] mode [modo]` agrupa varios puertos físicos en una sola interfaz lógica `Port-channel`. El modo define **si negocia** el enlace y con qué protocolo:\n\n| Protocolo | Modo | Comportamiento |\n|---|---|---|\n| — (manual) | `on` | Fuerza el puerto a unirse al canal **sin negociar nada**. |\n| LACP (802.3ad) | `active` | Empieza a negociar enviando paquetes LACP. |\n| LACP (802.3ad) | `passive` | Solo responde si el otro lado ya está negociando. |\n| PAgP (Cisco) | `desirable` | Empieza a negociar enviando paquetes PAgP. |\n| PAgP (Cisco) | `auto` | Solo responde si el otro lado ya está negociando. |\n\n**Combinaciones que sí forman el canal:** `active`+`active`, `active`+`passive`, `desirable`+`desirable`, `desirable`+`auto`, `on`+`on`.\n**Combinaciones que NO forman el canal:** `passive`+`passive` y `auto`+`auto` (ninguno de los dos lados inicia la negociación), y `on` con cualquier modo negociado (LACP o PAgP) del otro lado.\n\n```\ninterface range GigabitEthernet0/1 - 2\n channel-group 1 mode active\n!\ninterface Port-channel1\n switchport mode trunk\n```\n\nLímite de puertos por canal: hasta **8** con PAgP; con LACP hasta **16** físicos, de los cuales como máximo **8 activos** a la vez (el resto queda en espera/standby).\n\nVerificación:\n```\nSwitch# show etherchannel summary\nSwitch# show interfaces port-channel 1\n```"
+  },
+  {
+    "id": "etherchannel-requisitos-configuracion",
+    "tema": "etherchannel",
+    "subtema": "configuracion",
+    "titulo": "Requisitos de puertos para armar un EtherChannel",
+    "nivel": "intermedio",
+    "plataforma": "ios",
+    "version": "IOS XE 17.x",
+    "protocolo": "etherchannel",
+    "audiencia": [
+      "estudiante",
+      "profesional"
+    ],
+    "idioma": "es",
+    "estado": "publicado",
+    "verificacion": "fuentes-cruzadas",
+    "comandos_probados": false,
+    "fecha_revision": "2026-09-27",
+    "revisado_por": "Claude (fuentes cruzadas); sin prueba en equipo",
+    "fuentes": [
+      {
+        "titulo": "Cisco Catalyst 9600 - Layer 2 Configuration Guide, IOS XE Amsterdam 17.3.x",
+        "ubicacion": "Configuring EtherChannels",
+        "url": "https://www.cisco.com/c/en/us/td/docs/switches/lan/catalyst9600/software/release/17-3/configuration_guide/lyr2/b_173_lyr2_9600_cg/configuring_etherchannels.html"
+      },
+      {
+        "titulo": "Cisco Catalyst 9600 - Layer 2 Configuration Guide, IOS XE 16.12.x",
+        "ubicacion": "Configuring EtherChannels",
+        "url": "https://www.cisco.com/c/en/us/td/docs/switches/lan/catalyst9600/software/release/16-12/configuration_guide/lyr2/configuring_etherchannels.html"
+      }
+    ],
+    "palabras_clave": [
+      "etherchannel requisitos",
+      "speed duplex etherchannel",
+      "vlan etherchannel",
+      "trunk etherchannel",
+      "mismatch"
+    ],
+    "contenido": "Antes de meter puertos a un `channel-group`, todos deben quedar **configurados igual**; si alguno no coincide, ese puerto queda fuera del canal (o el canal ni se forma). Lo que Cisco exige que coincida entre todos los puertos del mismo EtherChannel:\n\n- **Velocidad y dúplex** iguales en todos los puertos.\n- **VLAN**: todos en la misma VLAN de acceso, **o** todos configurados como `trunk` (no se puede mezclar un puerto de acceso con uno trunk en el mismo canal).\n\nPor eso, en la práctica, conviene configurar la interfaz física **antes** de meterla al `channel-group`, o configurar el `Port-channel` primero y dejar que las físicas hereden la config al unirse — pero siempre verificando que ninguna quedó \"suspendida\" por no coincidir.\n\n```\ninterface range GigabitEthernet0/1 - 2\n switchport trunk encapsulation dot1q\n switchport mode trunk\n channel-group 1 mode active\n```\n\nVerificación (un puerto en estado distinto a \"P\" -bundled- no está realmente en el canal):\n```\nSwitch# show etherchannel summary\nSwitch# show etherchannel 1 port\n```"
+  },
+  {
+    "id": "hsrp-conceptos-mac-y-estados",
+    "tema": "hsrp",
+    "subtema": "conceptos",
+    "titulo": "\"HSRP: MAC virtual, temporizadores y máquina de estados\"",
+    "nivel": "intermedio",
+    "plataforma": "ios",
+    "version": "IOS XE 17.9.x",
+    "protocolo": "hsrp",
+    "audiencia": [
+      "estudiante",
+      "profesional"
+    ],
+    "idioma": "es",
+    "estado": "publicado",
+    "verificacion": "fuentes-cruzadas",
+    "comandos_probados": false,
+    "fecha_revision": "2026-09-27",
+    "revisado_por": "Claude (fuentes cruzadas); sin prueba en equipo",
+    "fuentes": [
+      {
+        "titulo": "Cisco - Understand the Hot Standby Router Protocol Features and Functionality",
+        "ubicacion": "Virtual MAC address y máquina de estados",
+        "url": "https://www.cisco.com/c/en/us/support/docs/ip/hot-standby-router-protocol-hsrp/9234-hsrpguidetoc.html"
+      },
+      {
+        "titulo": "Cisco Catalyst 9300 - IP Addressing Services Configuration Guide, IOS XE 17.9.x",
+        "ubicacion": "Configuring HSRP",
+        "url": "https://www.cisco.com/c/en/us/td/docs/switches/lan/catalyst9300/software/release/17-9/configuration_guide/ip/b_179_ip_9300_cg/configuring___hsrp.html"
+      }
+    ],
+    "palabras_clave": [
+      "hsrp",
+      "mac virtual",
+      "0000.0c07.ac",
+      "hello timer",
+      "hold timer",
+      "estados hsrp",
+      "active standby",
+      "gateway redundante"
+    ],
+    "contenido": "HSRP le da a varios hosts de una LAN un **gateway redundante**: dos (o más) routers comparten una IP y una MAC virtuales, aunque solo uno (el **activo**) responde tráfico en un momento dado.\n\n**MAC virtual:** `0000.0c07.acXX`, donde `XX` es el número de grupo HSRP en hexadecimal (en la mayoría de medios; Token Ring es la excepción). Por eso dos grupos HSRP distintos en la misma LAN nunca comparten MAC virtual.\n\n**Temporizadores por defecto:** hello cada **3 segundos**, hold (tiempo para declarar caído al activo si dejan de llegar hellos) de **10 segundos**.\n\n**Estados por los que pasa un router HSRP** (de menor a mayor participación): `Initial` → `Learn` → `Listen` → `Speak` → `Standby` → `Active`. Solo un router del grupo llega a `Active`; el que le sigue en prioridad queda en `Standby` listo para tomar el rol si el activo falla.\n\nVerificación:\n```\nRouter# show standby brief\nRouter# show standby GigabitEthernet0/1 1\n```"
+  },
+  {
+    "id": "hsrp-configuracion-priority-preempt-track",
+    "tema": "hsrp",
+    "subtema": "configuracion",
+    "titulo": "\"Configurar HSRP: priority, preempt y track\"",
+    "nivel": "intermedio",
+    "plataforma": "ios",
+    "version": "IOS XE 17.9.x",
+    "protocolo": "hsrp",
+    "audiencia": [
+      "estudiante",
+      "profesional"
+    ],
+    "idioma": "es",
+    "estado": "publicado",
+    "verificacion": "fuentes-cruzadas",
+    "comandos_probados": false,
+    "fecha_revision": "2026-09-27",
+    "revisado_por": "Claude (fuentes cruzadas); sin prueba en equipo",
+    "fuentes": [
+      {
+        "titulo": "Cisco Catalyst 9300 - IP Addressing Services Configuration Guide, IOS XE 17.9.x",
+        "ubicacion": "Configuring HSRP",
+        "url": "https://www.cisco.com/c/en/us/td/docs/switches/lan/catalyst9300/software/release/17-9/configuration_guide/ip/b_179_ip_9300_cg/configuring___hsrp.html"
+      },
+      {
+        "titulo": "Cisco - Use HSRP Preempt and Track Commands",
+        "ubicacion": "standby preempt y standby track",
+        "url": "https://www.cisco.com/c/en/us/support/docs/ip/hot-standby-router-protocol-hsrp/13780-6.html"
+      }
+    ],
+    "palabras_clave": [
+      "standby ip",
+      "standby priority",
+      "standby preempt",
+      "standby track",
+      "hsrp preempt",
+      "decremento de prioridad"
+    ],
+    "contenido": "Configuración mínima de un grupo HSRP en una interfaz:\n```\ninterface GigabitEthernet0/1\n ip address 192.168.1.2 255.255.255.0\n standby 1 ip 192.168.1.1\n standby 1 priority 110\n standby 1 preempt\n standby 1 track GigabitEthernet0/2 20\n```\n\n- **`standby [grupo] priority [1-255]`**: entre más alto, más prioridad. Por defecto es **100**. El de mayor prioridad debería ser el activo.\n- **`standby [grupo] preempt`**: **sin este comando, un router NUNCA vuelve a ser activo automáticamente** aunque tenga la prioridad más alta — solo se vuelve activo si el que era activo se cae mientras este ya estaba arriba. Con `preempt`, en cuanto detecta que su prioridad es mayor que la del activo actual, toma el rol.\n- **`standby [grupo] track [interfaz] [decremento]`**: si esa interfaz rastreada cae, la prioridad de este router baja en `decremento` (por defecto **10** si no se especifica). Así, si el enlace de salida del router \"principal\" se cae, su prioridad baja lo suficiente para que el otro router (con `preempt`) tome el control.\n\nVerificación:\n```\nRouter# show standby brief\n```"
+  },
+  {
+    "id": "intervlan-svi-switch-capa3",
+    "tema": "vlan",
+    "subtema": "inter-vlan",
+    "titulo": "Enrutar entre VLAN con SVI en un switch de capa 3",
+    "nivel": "intermedio",
+    "plataforma": "ios-xe",
+    "version": "IOS XE 17.9.x",
+    "protocolo": "vlan",
+    "audiencia": [
+      "estudiante",
+      "profesional"
+    ],
+    "idioma": "es",
+    "estado": "publicado",
+    "verificacion": "fuentes-cruzadas",
+    "comandos_probados": false,
+    "fecha_revision": "2026-09-27",
+    "revisado_por": "Claude (fuentes cruzadas); sin prueba en equipo",
+    "fuentes": [
+      {
+        "titulo": "Cisco - Configure Inter-VLAN Routing with Catalyst Switches",
+        "ubicacion": "Configure / Verify",
+        "url": "https://www.cisco.com/c/en/us/support/docs/lan-switching/inter-vlan-routing/41260-189.html"
+      },
+      {
+        "titulo": "Cisco Catalyst 9300 - Interface and Hardware Components Configuration Guide, IOS XE 17.9.x",
+        "ubicacion": "Configuring Interface Characteristics - Switch Virtual Interfaces",
+        "url": "https://www.cisco.com/c/en/us/td/docs/switches/lan/catalyst9300/software/release/17-9/configuration_guide/int_hw/b_179_int_and_hw_9300_cg/configuring_interface_characteristics.html"
+      }
+    ],
+    "palabras_clave": [
+      "inter-vlan",
+      "svi",
+      "interface vlan",
+      "ip routing",
+      "switch capa 3",
+      "multilayer",
+      "gateway por vlan",
+      "no switchport",
+      "routed port"
+    ],
+    "contenido": "En un switch de capa 3 no hace falta un router externo (router-on-a-stick) para comunicar VLAN distintas: cada VLAN tiene su propia **SVI** (*Switch Virtual Interface*), una interfaz lógica `interface vlan X` que funciona como el gateway de esa VLAN.\n\n```\nSwitch(config)# ip routing\n!\nSwitch(config)# interface vlan 10\nSwitch(config-if)# ip address 192.168.10.1 255.255.255.0\nSwitch(config-if)# no shutdown\n!\nSwitch(config)# interface vlan 20\nSwitch(config-if)# ip address 192.168.20.1 255.255.255.0\nSwitch(config-if)# no shutdown\n```\n\n- **`ip routing`** (modo global) es obligatorio: sin él, el switch se comporta como uno de capa 2 y **no enruta** entre las VLAN aunque las SVI tengan IP.\n- Cada host usa como **default gateway la IP de la SVI de su VLAN** (en el ejemplo, 192.168.10.1 para la VLAN 10).\n- Una SVI solo sube (up/up) si **la VLAN existe y tiene al menos un puerto activo** en estado *forwarding* de STP. Una SVI \"down\" suele significar que falta crear la VLAN o que no hay ningún puerto conectado en ella.\n- La SVI de la **VLAN 1** existe por defecto (para administración) y no se puede borrar.\n- Diferencia con un **routed port**: la SVI representa a toda una VLAN (varios puertos); un routed port es **un solo puerto físico** pasado a capa 3 con `no switchport` y con IP propia, sin VLAN asociada.\n\nVerificación:\n```\nSwitch# show ip interface brief\nSwitch# show ip route\n```"
+  },
+  {
+    "id": "ipv6-configuracion-ios",
+    "tema": "ipv6",
+    "subtema": "configuracion",
+    "titulo": "Configurar IPv6 en una interfaz Cisco IOS y verificarlo",
+    "nivel": "basico",
+    "plataforma": "ios",
+    "version": "IOS / IOS XE",
+    "protocolo": "ipv6",
+    "audiencia": [
+      "estudiante",
+      "profesional"
+    ],
+    "idioma": "es",
+    "estado": "publicado",
+    "verificacion": "fuentes-cruzadas",
+    "comandos_probados": false,
+    "fecha_revision": "2026-09-20",
+    "revisado_por": "Claude (fuentes cruzadas); sin prueba en equipo",
+    "fuentes": [
+      {
+        "titulo": "Cisco - Catalyst 2960-XR, Configuring IPv6 Unicast Routing",
+        "ubicacion": "IPv6 addressing",
+        "url": "https://www.cisco.com/c/en/us/td/docs/switches/lan/catalyst2960xr/software/15-2_4_e/configuration_guide/b_1524e_consolidated_2960xr_cg/b_1524e_consolidated_2960xr_cg_chapter_010101.html"
+      },
+      {
+        "titulo": "Cisco - Catalyst 3850, Configuring IPv6 Unicast Routing (IOS XE 16.12)",
+        "ubicacion": "IPv6 unicast routing",
+        "url": "https://www.cisco.com/c/en/us/td/docs/switches/lan/catalyst3850/software/release/16-12/configuration_guide/ipv6/b_1612_ipv6_3850_cg/configuring_ipv6_unicast_routing.html"
+      }
+    ],
+    "palabras_clave": [
+      "ipv6",
+      "configurar",
+      "ipv6 unicast-routing",
+      "ipv6 address",
+      "show ipv6 interface brief",
+      "show ipv6 route",
+      "ping ipv6",
+      "cisco ios",
+      "interfaz"
+    ],
+    "contenido": "Pasos en un router Cisco (`ipv6 unicast-routing` habilita el reenvío de paquetes IPv6):\n```\nRouter(config)# ipv6 unicast-routing\nRouter(config)# interface gigabitethernet0/0\nRouter(config-if)# ipv6 address 2001:db8:acad:1::1/64\nRouter(config-if)# ipv6 address fe80::1 link-local\nRouter(config-if)# no shutdown\n```\nVariantes de `ipv6 address`:\n- Dirección completa: `ipv6 address 2001:db8:acad:1::1/64`.\n- Con EUI-64: `ipv6 address 2001:db8:acad:1::/64 eui-64`.\n- Solo link-local: `ipv6 enable` o `ipv6 address fe80::1 link-local`.\n\nVerificación:\n```\nRouter# show ipv6 interface brief\nRouter# show ipv6 interface gigabitethernet0/0\nRouter# show ipv6 route\nRouter# ping ipv6 2001:db8:acad:1::2\n```\n**Aviso para switches Catalyst 2960 reales:** la guía de Cisco indica que, para usar IPv4 e IPv6 a la vez (doble pila), el switch debe usar la plantilla SDM dual: `sdm prefer dual-ipv4-and-ipv6 default` (y recargar)."
+  },
+  {
+    "id": "ipv6-eui64",
+    "tema": "ipv6",
+    "subtema": "eui-64",
+    "titulo": "EUI-64: identificador de interfaz a partir de la MAC",
+    "nivel": "intermedio",
+    "plataforma": "generico",
+    "version": "-",
+    "protocolo": "ipv6",
+    "audiencia": [
+      "estudiante",
+      "profesional"
+    ],
+    "idioma": "es",
+    "estado": "publicado",
+    "verificacion": "fuentes-cruzadas",
+    "comandos_probados": false,
+    "fecha_revision": "2026-09-20",
+    "revisado_por": "Claude (fuentes cruzadas); sin prueba en equipo",
+    "fuentes": [
+      {
+        "titulo": "RFC 4291 - IP Version 6 Addressing Architecture",
+        "ubicacion": "Apéndice A",
+        "url": "https://www.rfc-editor.org/rfc/rfc4291"
+      },
+      {
+        "titulo": "Cisco - Catalyst 2960-XR, Configuring IPv6 Unicast Routing",
+        "ubicacion": "ipv6 address eui-64",
+        "url": "https://www.cisco.com/c/en/us/td/docs/switches/lan/catalyst2960xr/software/15-2_4_e/configuration_guide/b_1524e_consolidated_2960xr_cg/b_1524e_consolidated_2960xr_cg_chapter_010101.html"
+      }
+    ],
+    "palabras_clave": [
+      "ipv6",
+      "eui-64",
+      "eui64",
+      "mac",
+      "identificador de interfaz",
+      "fffe",
+      "bit universal local",
+      "u/l"
+    ],
+    "contenido": "El **EUI-64 modificado** convierte una MAC de 48 bits en un identificador de interfaz de 64 bits (RFC 4291, Apéndice A):\n1. Se parte la MAC por la mitad.\n2. Se inserta `ff:fe` en medio.\n3. Se **invierte el 7.º bit** del primer byte (el bit universal/local).\n\nEjemplo con la MAC `00:1A:2B:3C:4D:5E`:\n- Con `ff:fe` en medio: `00:1A:2B:FF:FE:3C:4D:5E`.\n- El primer byte `00` pasa a `02` al invertir el bit: identificador `021a:2bff:fe3c:4d5e`, que abreviado es `21a:2bff:fe3c:4d5e`.\n- Con el prefijo `2001:db8:acad:1::/64` la dirección queda `2001:db8:acad:1:21a:2bff:fe3c:4d5e`.\n\nEn Cisco IOS basta el prefijo; los últimos 64 bits se calculan solos desde la MAC de la interfaz:\n```\nRouter(config-if)# ipv6 address 2001:db8:acad:1::/64 eui-64\n```"
+  },
+  {
+    "id": "ipv6-formato-y-abreviacion",
+    "tema": "ipv6",
+    "subtema": "formato",
+    "titulo": "Cómo se escribe y se abrevia una dirección IPv6",
+    "nivel": "basico",
+    "plataforma": "generico",
+    "version": "-",
+    "protocolo": "ipv6",
+    "audiencia": [
+      "estudiante",
+      "profesional"
+    ],
+    "idioma": "es",
+    "estado": "publicado",
+    "verificacion": "fuentes-cruzadas",
+    "comandos_probados": false,
+    "fecha_revision": "2026-09-20",
+    "revisado_por": "Claude (fuentes cruzadas); sin prueba en equipo",
+    "fuentes": [
+      {
+        "titulo": "RFC 4291 - IP Version 6 Addressing Architecture",
+        "ubicacion": "§2.2",
+        "url": "https://www.rfc-editor.org/rfc/rfc4291"
+      },
+      {
+        "titulo": "RFC 5952 - A Recommendation for IPv6 Address Text Representation",
+        "ubicacion": "§4",
+        "url": "https://www.rfc-editor.org/rfc/rfc5952"
+      }
+    ],
+    "palabras_clave": [
+      "ipv6",
+      "abreviar",
+      "comprimir",
+      "expandir",
+      "doble dos puntos",
+      "ceros",
+      "notación",
+      "formato",
+      "hexadecimal",
+      "::"
+    ],
+    "contenido": "Una dirección IPv6 mide **128 bits** y se escribe como **8 grupos de 16 bits** en hexadecimal, separados por `:` (por ejemplo `2001:0db8:0000:0000:0000:ff00:0042:8329`).\n\n**Reglas de la RFC 4291 (§2.2):**\n- Los ceros a la izquierda de cada grupo se pueden omitir, pero cada grupo debe conservar al menos un dígito.\n- `::` reemplaza una o más secuencias consecutivas de grupos en cero y **solo puede aparecer una vez** en la dirección.\n\n**Forma recomendada (RFC 5952, §4):**\n1. Se quitan siempre los ceros a la izquierda: `2001:0db8::0001` se escribe `2001:db8::1`.\n2. `::` se usa al máximo: se abrevia la racha **más larga** de grupos en cero. `2001:db8:0:0:0:0:2:1` queda `2001:db8::2:1`.\n3. `::` **no** se usa para un único grupo en cero: `2001:db8:0:1:1:1:1:1` es lo correcto, y `2001:db8::1:1:1:1:1` no.\n4. Si hay dos rachas del mismo largo, se abrevia la **primera**: `2001:db8:0:0:1:0:0:1` queda `2001:db8::1:0:0:1`.\n5. Las letras `a` a `f` van en **minúscula**."
+  },
+  {
+    "id": "ipv6-link-local",
+    "tema": "ipv6",
+    "subtema": "link-local",
+    "titulo": "Dirección link-local (fe80::/10)",
+    "nivel": "basico",
+    "plataforma": "generico",
+    "version": "-",
+    "protocolo": "ipv6",
+    "audiencia": [
+      "estudiante",
+      "profesional"
+    ],
+    "idioma": "es",
+    "estado": "publicado",
+    "verificacion": "fuentes-cruzadas",
+    "comandos_probados": false,
+    "fecha_revision": "2026-09-20",
+    "revisado_por": "Claude (fuentes cruzadas); sin prueba en equipo",
+    "fuentes": [
+      {
+        "titulo": "RFC 4291 - IP Version 6 Addressing Architecture",
+        "ubicacion": "§2.1, §2.5.6",
+        "url": "https://www.rfc-editor.org/rfc/rfc4291"
+      },
+      {
+        "titulo": "RFC 4862 - IPv6 Stateless Address Autoconfiguration",
+        "ubicacion": "§5.3",
+        "url": "https://www.rfc-editor.org/rfc/rfc4862"
+      },
+      {
+        "titulo": "Cisco - Catalyst 2960-XR, Configuring IPv6 Unicast Routing",
+        "ubicacion": "link-local",
+        "url": "https://www.cisco.com/c/en/us/td/docs/switches/lan/catalyst2960xr/software/15-2_4_e/configuration_guide/b_1524e_consolidated_2960xr_cg/b_1524e_consolidated_2960xr_cg_chapter_010101.html"
+      }
+    ],
+    "palabras_clave": [
+      "ipv6",
+      "link-local",
+      "fe80",
+      "enlace local",
+      "ndp",
+      "automática",
+      "ipv6 enable"
+    ],
+    "contenido": "- **Toda interfaz con IPv6 debe tener al menos una dirección link-local** (RFC 4291 §2.1). Empieza por `fe80::/10`.\n- Se forma **automáticamente** cuando la interfaz se habilita: prefijo `fe80::/10` + identificador de interfaz (RFC 4862 §5.3).\n- Solo vale en el **enlace local**: un router no la reenvía a otras redes.\n- Se usa en el descubrimiento de vecinos (NDP) y en la autoconfiguración.\n\nEn Cisco IOS puedes fijarla a mano (más fácil de leer y recordar) o dejar que se genere sola:\n```\nRouter(config-if)# ipv6 address fe80::1 link-local\nRouter(config-if)# ipv6 enable\n```\n`ipv6 enable` genera la link-local automáticamente y habilita IPv6 en la interfaz sin asignar una dirección global."
+  },
+  {
+    "id": "ipv6-ndp-reemplaza-arp",
+    "tema": "ipv6",
+    "subtema": "ndp",
+    "titulo": "NDP: el reemplazo de ARP en IPv6",
+    "nivel": "intermedio",
+    "plataforma": "generico",
+    "version": "-",
+    "protocolo": "ipv6,icmpv6",
+    "audiencia": [
+      "estudiante",
+      "profesional"
+    ],
+    "idioma": "es",
+    "estado": "publicado",
+    "verificacion": "fuentes-cruzadas",
+    "comandos_probados": false,
+    "fecha_revision": "2026-09-20",
+    "revisado_por": "Claude (fuentes cruzadas); sin prueba en equipo",
+    "fuentes": [
+      {
+        "titulo": "RFC 4861 - Neighbor Discovery for IP version 6",
+        "ubicacion": "§4, §7",
+        "url": "https://www.rfc-editor.org/rfc/rfc4861"
+      },
+      {
+        "titulo": "RFC 4291 - IP Version 6 Addressing Architecture",
+        "ubicacion": "§2.7.1",
+        "url": "https://www.rfc-editor.org/rfc/rfc4291"
+      }
+    ],
+    "palabras_clave": [
+      "ipv6",
+      "ndp",
+      "neighbor discovery",
+      "descubrimiento de vecinos",
+      "arp",
+      "nd",
+      "icmpv6",
+      "solicited-node",
+      "router solicitation",
+      "133",
+      "134",
+      "135",
+      "136"
+    ],
+    "contenido": "IPv6 no usa ARP: usa **NDP** (Neighbor Discovery Protocol), que va sobre ICMPv6 (RFC 4861). Los cinco mensajes:\n\n| Mensaje | ICMPv6 tipo | Para qué |\n|---|---|---|\n| Router Solicitation (RS) | 133 | Un host pide un RA de inmediato |\n| Router Advertisement (RA) | 134 | El router anuncia prefijo y parámetros |\n| Neighbor Solicitation (NS) | 135 | Pregunta la MAC de un vecino / DAD |\n| Neighbor Advertisement (NA) | 136 | Respuesta con la MAC |\n| Redirect | 137 | El router indica un mejor siguiente salto |\n\n**Resolución de direcciones:** en vez de un broadcast, el NS se envía a la dirección **multicast de nodo solicitado** de la dirección buscada: `ff02::1:ffXX:XXXX`, donde `XX:XXXX` son los **24 bits finales** de esa dirección (RFC 4291 §2.7.1). Así solo se interrumpe a los equipos con ese sufijo. El destino responde con un NA unicast.\n\n**Seguridad básica:** todos los mensajes NDP se envían con **Hop Limit 255**; si llegan con otro valor se descartan, así no pueden venir de fuera del enlace."
+  },
+  {
+    "id": "ipv6-slaac-y-dhcpv6",
+    "tema": "ipv6",
+    "subtema": "slaac",
+    "titulo": "SLAAC, DHCPv6 y los indicadores M y O",
+    "nivel": "intermedio",
+    "plataforma": "generico",
+    "version": "-",
+    "protocolo": "ipv6,slaac,dhcpv6",
+    "audiencia": [
+      "estudiante",
+      "profesional"
+    ],
+    "idioma": "es",
+    "estado": "publicado",
+    "verificacion": "fuentes-cruzadas",
+    "comandos_probados": false,
+    "fecha_revision": "2026-09-20",
+    "revisado_por": "Claude (fuentes cruzadas); sin prueba en equipo",
+    "fuentes": [
+      {
+        "titulo": "RFC 4862 - IPv6 Stateless Address Autoconfiguration",
+        "ubicacion": "§5.3 a §5.5",
+        "url": "https://www.rfc-editor.org/rfc/rfc4862"
+      },
+      {
+        "titulo": "RFC 4861 - Neighbor Discovery for IP version 6",
+        "ubicacion": "§4.2",
+        "url": "https://www.rfc-editor.org/rfc/rfc4861"
+      }
+    ],
+    "palabras_clave": [
+      "ipv6",
+      "slaac",
+      "autoconfiguración",
+      "dhcpv6",
+      "router advertisement",
+      "ra",
+      "indicador m",
+      "indicador o",
+      "dad",
+      "prefijo"
+    ],
+    "contenido": "**SLAAC** (autoconfiguración de dirección sin estado, RFC 4862):\n1. El equipo forma su **link-local** (`fe80::/10` + ID de interfaz).\n2. Comprueba que no esté repetida con **DAD** (detección de direcciones duplicadas), enviando un mensaje *Neighbor Solicitation*.\n3. Recibe un **Router Advertisement (RA)** con el prefijo. Si el indicador **A** (autónomo) está activo, el equipo une ese prefijo con su ID de interfaz y forma la dirección global.\n\n**Indicadores del RA (RFC 4861):**\n- **M = 1**: la configuración de direcciones se administra por **DHCPv6**.\n- **O = 1**: hay **otra información** (por ejemplo DNS) disponible por DHCPv6.\n\nCombinaciones habituales: solo SLAAC (M=0, O=0); SLAAC con DHCPv6 para lo demás (O=1); DHCPv6 con dirección asignada por el servidor (M=1)."
+  },
+  {
+    "id": "ipv6-subneteo-48-a-64",
+    "tema": "ipv6",
+    "subtema": "subneteo",
+    "titulo": "Subnetear IPv6: de /48 a /64",
+    "nivel": "intermedio",
+    "plataforma": "generico",
+    "version": "-",
+    "protocolo": "ipv6",
+    "audiencia": [
+      "estudiante",
+      "profesional"
+    ],
+    "idioma": "es",
+    "estado": "publicado",
+    "verificacion": "fuentes-cruzadas",
+    "comandos_probados": false,
+    "fecha_revision": "2026-09-20",
+    "revisado_por": "Claude (fuentes cruzadas); sin prueba en equipo",
+    "fuentes": [
+      {
+        "titulo": "RFC 4291 - IP Version 6 Addressing Architecture",
+        "ubicacion": "§2.5.1",
+        "url": "https://www.rfc-editor.org/rfc/rfc4291"
+      },
+      {
+        "titulo": "RFC 4193 - Unique Local IPv6 Unicast Addresses",
+        "ubicacion": "§3.1",
+        "url": "https://www.rfc-editor.org/rfc/rfc4193"
+      },
+      {
+        "titulo": "Cisco - Catalyst 2960-XR, Configuring IPv6 Unicast Routing",
+        "ubicacion": "EUI-64 / 2000::/3",
+        "url": "https://www.cisco.com/c/en/us/td/docs/switches/lan/catalyst2960xr/software/15-2_4_e/configuration_guide/b_1524e_consolidated_2960xr_cg/b_1524e_consolidated_2960xr_cg_chapter_010101.html"
+      }
+    ],
+    "palabras_clave": [
+      "ipv6",
+      "subneteo",
+      "subred",
+      "/48",
+      "/64",
+      "/56",
+      "id de subred",
+      "cuántas subredes",
+      "prefijo",
+      "plan de direccionamiento"
+    ],
+    "contenido": "Una dirección global IPv6 tiene **64 bits de red/subred** y **64 bits de identificador de interfaz**: para todas las direcciones unicast que no empiezan por `000`, el ID de interfaz mide 64 bits (RFC 4291 §2.5.1). Por eso las subredes de usuarios son **/64**.\n\nSi tu sitio tiene un prefijo **/48**, quedan **16 bits** para el ID de subred:\n- Subredes /64 disponibles: 2^16 = **65 536**.\n- Ejemplo con `2001:db8:acad::/48`:\n  - `2001:db8:acad:0::/64`\n  - `2001:db8:acad:1::/64`\n  - `2001:db8:acad:2::/64`\n  - …\n  - `2001:db8:acad:ffff::/64`\n\nCon un **/56** quedan 8 bits: 2^8 = 256 subredes /64.\n\nRegla general: subredes = 2^(nuevo prefijo − prefijo actual). No se descuentan dirección de red ni de broadcast (IPv6 no tiene broadcast)."
+  },
+  {
+    "id": "ipv6-tipos-de-direccion",
+    "tema": "ipv6",
+    "subtema": "tipos",
+    "titulo": "Tipos de dirección IPv6 y sus prefijos",
+    "nivel": "basico",
+    "plataforma": "generico",
+    "version": "-",
+    "protocolo": "ipv6",
+    "audiencia": [
+      "estudiante",
+      "profesional"
+    ],
+    "idioma": "es",
+    "estado": "publicado",
+    "verificacion": "fuentes-cruzadas",
+    "comandos_probados": false,
+    "fecha_revision": "2026-09-20",
+    "revisado_por": "Claude (fuentes cruzadas); sin prueba en equipo",
+    "fuentes": [
+      {
+        "titulo": "RFC 4291 - IP Version 6 Addressing Architecture",
+        "ubicacion": "§2.4, §2.7",
+        "url": "https://www.rfc-editor.org/rfc/rfc4291"
+      },
+      {
+        "titulo": "RFC 4193 - Unique Local IPv6 Unicast Addresses",
+        "ubicacion": "§3.1, §4.1",
+        "url": "https://www.rfc-editor.org/rfc/rfc4193"
+      },
+      {
+        "titulo": "RFC 3849 - IPv6 Address Prefix Reserved for Documentation",
+        "ubicacion": "§2, §3",
+        "url": "https://www.rfc-editor.org/rfc/rfc3849"
+      }
+    ],
+    "palabras_clave": [
+      "ipv6",
+      "tipos de dirección",
+      "unicast",
+      "multicast",
+      "link-local",
+      "ula",
+      "gua",
+      "global unicast",
+      "loopback",
+      "documentación",
+      "broadcast",
+      "prefijo"
+    ],
+    "contenido": "| Tipo | Prefijo | Qué es |\n|---|---|---|\n| No especificada | `::/128` | Sin dirección asignada |\n| Loopback | `::1/128` | El propio equipo (como 127.0.0.1) |\n| Link-local | `fe80::/10` | Válida solo en el enlace local |\n| Local única (ULA) | `fc00::/7` (en la práctica `fd00::/8`) | Privada, **no enrutable en Internet** (RFC 4193) |\n| Multicast | `ff00::/8` | Un mensaje a un grupo de equipos |\n| Documentación | `2001:db8::/32` | Reservada para ejemplos; **no se enruta** (RFC 3849) |\n| Unicast global | el resto; las que se ven en Internet empiezan por `2` o `3` (`2000::/3`) | Enrutable |\n\n- En IPv6 **no existe broadcast**: su función la cumple multicast.\n- El **ámbito** de un multicast está en el segundo dígito: `1` interfaz, `2` enlace local, `4` administrativo, `5` sitio, `8` organización, `e` global (RFC 4291 §2.7). Por ejemplo `ff02::1` = todos los nodos del enlace y `ff02::2` = todos los routers del enlace.\n- Una ULA tiene la forma: prefijo `fc00::/7`, bit L en 1 (`fd00::/8`), **ID global de 40 bits**, **ID de subred de 16 bits** e ID de interfaz de 64 bits."
+  },
+  {
+    "id": "ospf-conceptos-basicos",
+    "tema": "ruteo",
+    "subtema": "ospf-conceptos",
+    "titulo": "OSPFv2: conceptos básicos (áreas, vecinos, DR/BDR)",
+    "nivel": "intermedio",
+    "plataforma": "generico",
+    "version": "-",
+    "protocolo": "ospf",
+    "audiencia": [
+      "estudiante",
+      "profesional"
+    ],
+    "idioma": "es",
+    "estado": "publicado",
+    "verificacion": "fuentes-cruzadas",
+    "comandos_probados": false,
+    "fecha_revision": "2026-09-20",
+    "revisado_por": "Claude (fuentes cruzadas); sin prueba en equipo",
+    "fuentes": [
+      {
+        "titulo": "RFC 2328 - OSPF Version 2",
+        "ubicacion": "§3.1, §9.4, §10.1",
+        "url": "https://www.rfc-editor.org/rfc/rfc2328"
+      },
+      {
+        "titulo": "Cisco - IOS XE 17.x, Configuring OSPF",
+        "ubicacion": "Configuring OSPF",
+        "url": "https://www.cisco.com/c/en/us/td/docs/routers/ios/config/17-x/ip-routing/b-ip-routing/m_iro-cfg-0.html"
+      }
+    ],
+    "palabras_clave": [
+      "ospf",
+      "ospfv2",
+      "conceptos",
+      "área 0",
+      "backbone",
+      "dr",
+      "bdr",
+      "designated router",
+      "estados de vecino",
+      "full",
+      "224.0.0.5",
+      "224.0.0.6",
+      "protocolo 89",
+      "router id"
+    ],
+    "contenido": "- OSPF es un protocolo de **estado de enlace** para enrutar dentro de un sistema autónomo. Va directo sobre IP, **protocolo 89** (RFC 2328).\n- Multicast: **224.0.0.5** (todos los routers OSPF) y **224.0.0.6** (DR y BDR).\n- **Área 0 (0.0.0.0) = backbone.** Debe ser contigua; las demás áreas se conectan a ella.\n- **Estados de un vecino:** Down, Attempt, Init, 2-Way, ExStart, Exchange, Loading y **Full** (adyacencia completa).\n- **DR/BDR (redes de acceso múltiple):** se elige el router con **mayor prioridad**; si empatan, el de **mayor Router ID**. Prioridad **0** = no puede ser DR ni BDR. La elección **no es expropiativa**: un router mejor que aparece después no desplaza al DR actual.\n- Para activar OSPF en Cisco se crea el proceso, se indican las direcciones/interfaces que participan y el **área** de cada una."
+  },
+  {
+    "id": "ospf-configuracion-basica",
+    "tema": "ruteo",
+    "subtema": "ospf-config",
+    "titulo": "Configurar OSPFv2 de un solo área en Cisco IOS",
+    "nivel": "intermedio",
+    "plataforma": "ios",
+    "version": "IOS / IOS XE",
+    "protocolo": "ospf",
+    "audiencia": [
+      "estudiante",
+      "profesional"
+    ],
+    "idioma": "es",
+    "estado": "publicado",
+    "verificacion": "fuentes-cruzadas",
+    "comandos_probados": false,
+    "fecha_revision": "2026-09-20",
+    "revisado_por": "Claude (fuentes cruzadas); sin prueba en equipo",
+    "fuentes": [
+      {
+        "titulo": "Cisco - IOS XE 17.x, Configuring OSPF",
+        "ubicacion": "Enabling OSPF",
+        "url": "https://www.cisco.com/c/en/us/td/docs/routers/ios/config/17-x/ip-routing/b-ip-routing/m_iro-cfg-0.html"
+      },
+      {
+        "titulo": "Cisco - IOS XE 17.x, Enabling OSPFv2 on an Interface Basis",
+        "ubicacion": "Enabling OSPFv2 on an Interface Basis",
+        "url": "https://www.cisco.com/c/en/us/td/docs/routers/ios/config/17-x/ip-routing/b-ip-routing/m_iro-mode-ospfv2.html"
+      }
+    ],
+    "palabras_clave": [
+      "ospf",
+      "configurar ospf",
+      "router ospf",
+      "network",
+      "wildcard",
+      "area 0",
+      "passive-interface",
+      "ip ospf area",
+      "router-id",
+      "un solo área",
+      "single area"
+    ],
+    "contenido": "Método con la sentencia `network` (dirección + **máscara wildcard** + área):\n```\nRouter(config)# router ospf 1\nRouter(config-router)# router-id 1.1.1.1\nRouter(config-router)# network 192.168.1.0 0.0.0.255 area 0\nRouter(config-router)# network 10.0.0.0 0.0.0.3 area 0\nRouter(config-router)# passive-interface gigabitethernet0/1\n```\n- El **ID de proceso** (1 a 65535) solo tiene significado local.\n- `passive-interface` evita enviar *hello* por esa interfaz (típico en la LAN de usuarios: la red se anuncia pero no se forman vecinos).\n- Cisco evalúa las sentencias `network` **en orden**, comparando cada interfaz con el par dirección/wildcard.\n\nMétodo recomendado por la documentación de Cisco para OSPFv2 (por interfaz):\n```\nRouter(config)# interface gigabitethernet0/0\nRouter(config-if)# ip ospf 1 area 0\n```\nVerificación:\n```\nRouter# show ip ospf neighbor\nRouter# show ip ospf interface brief\nRouter# show ip protocols\nRouter# show ip route ospf\n```"
+  },
+  {
+    "id": "ospf-costo-y-ancho-de-banda",
+    "tema": "ruteo",
+    "subtema": "ospf-costo",
+    "titulo": "Costo OSPF y ancho de banda de referencia",
+    "nivel": "intermedio",
+    "plataforma": "ios",
+    "version": "IOS / IOS XE",
+    "protocolo": "ospf",
+    "audiencia": [
+      "estudiante",
+      "profesional"
+    ],
+    "idioma": "es",
+    "estado": "publicado",
+    "verificacion": "fuentes-cruzadas",
+    "comandos_probados": false,
+    "fecha_revision": "2026-09-20",
+    "revisado_por": "Claude (fuentes cruzadas); sin prueba en equipo",
+    "fuentes": [
+      {
+        "titulo": "Cisco - IOS XE 17.x, Configuring OSPF",
+        "ubicacion": "auto-cost reference-bandwidth",
+        "url": "https://www.cisco.com/c/en/us/td/docs/routers/ios/config/17-x/ip-routing/b-ip-routing/m_iro-cfg-0.html"
+      },
+      {
+        "titulo": "RFC 2328 - OSPF Version 2",
+        "ubicacion": "§16.1 (métrica)",
+        "url": "https://www.rfc-editor.org/rfc/rfc2328"
+      }
+    ],
+    "palabras_clave": [
+      "ospf",
+      "costo",
+      "cost",
+      "métrica",
+      "ancho de banda de referencia",
+      "reference bandwidth",
+      "auto-cost",
+      "fastethernet",
+      "gigabit",
+      "100 mbps"
+    ],
+    "contenido": "En Cisco, el costo de una interfaz = **ancho de banda de referencia ÷ ancho de banda de la interfaz**, con referencia **por defecto de 10^8 bps (100 Mbps)**.\n\nConsecuencia: una interfaz de 100 Mbps cuesta **1**, y una de 1 Gbps también sale con costo **1** (el resultado no baja de 1), así que **OSPF no distingue** entre ambas. Para distinguirlas se sube la referencia, con el **mismo valor en todos los routers**:\n```\nRouter(config-router)# auto-cost reference-bandwidth 1000\n```\n(El valor va en Mbps.) El costo de una ruta es la **suma** de los costos de las interfaces de salida a lo largo del camino."
+  },
+  {
+    "id": "ospf-hello-dead-y-vecinos",
+    "tema": "ruteo",
+    "subtema": "ospf-vecinos",
+    "titulo": "Por qué OSPF no forma vecinos: hello, dead, área, máscara",
+    "nivel": "intermedio",
+    "plataforma": "generico",
+    "version": "-",
+    "protocolo": "ospf",
+    "audiencia": [
+      "estudiante",
+      "profesional"
+    ],
+    "idioma": "es",
+    "estado": "publicado",
+    "verificacion": "fuentes-cruzadas",
+    "comandos_probados": false,
+    "fecha_revision": "2026-09-20",
+    "revisado_por": "Claude (fuentes cruzadas); sin prueba en equipo",
+    "fuentes": [
+      {
+        "titulo": "RFC 2328 - OSPF Version 2",
+        "ubicacion": "§10.5, Apéndice C",
+        "url": "https://www.rfc-editor.org/rfc/rfc2328"
+      },
+      {
+        "titulo": "Cisco - IOS XE, OSPF Support for Fast Hello Packets (intervalos por defecto)",
+        "ubicacion": "hello/dead por defecto",
+        "url": "https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/iproute_ospf/configuration/xe-16/iro-xe-16-book/iro-fast-hello.html"
+      }
+    ],
+    "palabras_clave": [
+      "ospf",
+      "vecinos",
+      "no forma adyacencia",
+      "hello",
+      "dead interval",
+      "hello interval",
+      "intervalo",
+      "área",
+      "máscara",
+      "mismatch",
+      "neighbor",
+      "troubleshooting",
+      "diagnóstico"
+    ],
+    "contenido": "Dos routers solo forman vecindad si los paquetes *Hello* **coinciden** en estos campos (RFC 2328 §10.5); si no, el Hello se descarta:\n- **Máscara de red** (en redes broadcast/NBMA).\n- **HelloInterval** y **RouterDeadInterval**.\n- **ID de área**.\n- **Autenticación**.\n\n**Valores por defecto en Cisco:** hello **10 s** y dead **40 s** en Ethernet (broadcast) y punto a punto; hello **30 s** y dead **120 s** en enlaces no broadcast. El dead es 4 veces el hello si no se cambia.\n\nSe ajustan por interfaz:\n```\nRouter(config-if)# ip ospf hello-interval 10\nRouter(config-if)# ip ospf dead-interval 40\n```\n**Lista de revisión cuando no aparece el vecino:**\n1. ¿Las dos interfaces están activas y en la misma subred con la misma máscara?\n2. ¿Están en la **misma área**?\n3. ¿Coinciden hello y dead?\n4. ¿La interfaz está declarada como `passive-interface`? (una pasiva no envía hello)\n5. ¿La sentencia `network` (o `ip ospf area`) realmente cubre la interfaz?\n\nComandos: `show ip ospf neighbor`, `show ip ospf interface`, `show ip protocols`."
+  },
+  {
+    "id": "ospf-router-id",
+    "tema": "ruteo",
+    "subtema": "ospf-router-id",
+    "titulo": "Cómo elige OSPF el Router ID",
+    "nivel": "intermedio",
+    "plataforma": "ios",
+    "version": "IOS / IOS XE",
+    "protocolo": "ospf",
+    "audiencia": [
+      "estudiante",
+      "profesional"
+    ],
+    "idioma": "es",
+    "estado": "publicado",
+    "verificacion": "fuentes-cruzadas",
+    "comandos_probados": false,
+    "fecha_revision": "2026-09-20",
+    "revisado_por": "Claude (fuentes cruzadas); sin prueba en equipo",
+    "fuentes": [
+      {
+        "titulo": "Cisco - IOS XE 17.x, Configuring OSPF",
+        "ubicacion": "Router ID",
+        "url": "https://www.cisco.com/c/en/us/td/docs/routers/ios/config/17-x/ip-routing/b-ip-routing/m_iro-cfg-0.html"
+      },
+      {
+        "titulo": "Cisco - IOS XE 17.x, Enabling OSPFv2 on an Interface Basis",
+        "ubicacion": "router-id",
+        "url": "https://www.cisco.com/c/en/us/td/docs/routers/ios/config/17-x/ip-routing/b-ip-routing/m_iro-mode-ospfv2.html"
+      }
+    ],
+    "palabras_clave": [
+      "ospf",
+      "router id",
+      "router-id",
+      "loopback",
+      "ip más alta",
+      "clear ip ospf process",
+      "identificador"
+    ],
+    "contenido": "El Router ID se elige así (documentación de Cisco), en este orden:\n1. El configurado con el comando **`router-id`** dentro de `router ospf` (tiene prioridad sobre todo).\n2. Si no hay, la **IP más alta de las interfaces loopback**.\n3. Si no hay loopback, la **IP más alta de cualquier interfaz activa**.\n\nLas loopback se prefieren porque **nunca caen**, lo que da más estabilidad.\n```\nRouter(config)# router ospf 1\nRouter(config-router)# router-id 1.1.1.1\n```\nSi cambias el Router ID con el proceso ya activo, hay que reiniciar el proceso para que tome efecto:\n```\nRouter# clear ip ospf process\n```"
+  },
+  {
+    "id": "router-on-a-stick",
+    "tema": "vlan",
+    "subtema": "inter-vlan",
+    "titulo": "Router-on-a-stick: enrutar entre VLAN con subinterfaces",
+    "nivel": "intermedio",
+    "plataforma": "ios",
+    "version": "IOS / IOS XE",
+    "protocolo": "802.1q",
+    "audiencia": [
+      "estudiante",
+      "profesional"
+    ],
+    "idioma": "es",
+    "estado": "publicado",
+    "verificacion": "fuentes-cruzadas",
+    "comandos_probados": false,
+    "fecha_revision": "2026-09-20",
+    "revisado_por": "Claude (fuentes cruzadas); sin prueba en equipo",
+    "fuentes": [
+      {
+        "titulo": "Cisco - IOS XE 17.x, Configuring Routing Between VLANs with IEEE 802.1Q Encapsulation",
+        "ubicacion": "Routing between VLANs",
+        "url": "https://www.cisco.com/c/en/us/td/docs/routers/ios/config/17-x/lan-wan/b-lan-wan/m_lnsw-conf-vlan-ieee.html"
+      },
+      {
+        "titulo": "Cisco - Configure Inter-VLAN Routing with an External Router (doc 14976)",
+        "ubicacion": "Router-on-a-stick",
+        "url": "https://www.cisco.com/c/en/us/support/docs/lan-switching/inter-vlan-routing/14976-50.html"
+      }
+    ],
+    "palabras_clave": [
+      "router on a stick",
+      "router-on-a-stick",
+      "subinterfaz",
+      "encapsulation dot1q",
+      "inter-vlan",
+      "enrutamiento entre vlan",
+      "gateway",
+      "native"
+    ],
+    "contenido": "Un solo enlace **trunk** entre el switch y el router; el router usa **una subinterfaz por VLAN** (cada una es el gateway de su VLAN).\n\nRouter:\n```\nRouter(config)# interface gigabitethernet0/0\nRouter(config-if)# no shutdown\nRouter(config-if)# interface gigabitethernet0/0.10\nRouter(config-subif)# encapsulation dot1Q 10\nRouter(config-subif)# ip address 10.10.10.1 255.255.255.0\nRouter(config-subif)# interface gigabitethernet0/0.20\nRouter(config-subif)# encapsulation dot1Q 20\nRouter(config-subif)# ip address 10.10.20.1 255.255.255.0\n```\nSwitch (puerto hacia el router):\n```\nSwitch(config-if)# switchport mode trunk\n```\nPuntos clave de la documentación de Cisco:\n- Cada subinterfaz necesita un **ID de VLAN distinto** en `encapsulation dot1Q`.\n- Para la VLAN nativa se usa la palabra `native`: `encapsulation dot1Q 1 native`. Si una subinterfaz es nativa, la interfaz física no puede llevar dirección IP.\n- Un error común es **no hacer coincidir la VLAN nativa** entre router y switch.\n- Los hosts de cada VLAN usan la IP de su subinterfaz como gateway.\n\nVerificación: `show ip route`, `show interface`, `show vlans` en el router y `show interfaces gigabitethernet0/1 switchport` en el switch."
+  },
+  {
+    "id": "sda-fabric-roles-y-planos",
+    "tema": "sdn",
+    "subtema": "sd-access",
+    "titulo": "\"Cisco SD-Access: underlay/overlay, LISP, VXLAN, SGT y roles del fabric\"",
+    "nivel": "avanzado",
+    "plataforma": "generico",
+    "version": "Catalyst Center (antes DNA Center)",
+    "protocolo": "sd-access",
+    "audiencia": [
+      "estudiante",
+      "profesional"
+    ],
+    "idioma": "es",
+    "estado": "publicado",
+    "verificacion": "fuentes-cruzadas",
+    "comandos_probados": false,
+    "fecha_revision": "2026-09-27",
+    "revisado_por": "Claude (fuentes cruzadas); sin prueba en equipo",
+    "fuentes": [
+      {
+        "titulo": "Cisco Design Zone - Software-Defined Access Design Guide",
+        "ubicacion": "SD-Access Architecture, Fabric Roles",
+        "url": "https://www.cisco.com/c/en/us/td/docs/solutions/CVD/Campus/cisco-sda-design-guide.html"
+      },
+      {
+        "titulo": "Cisco Catalyst Center - SD-Access Deployment Using Cisco Catalyst Center (Validated Profile)",
+        "ubicacion": "Solution Overview",
+        "url": "https://www.cisco.com/c/en/us/td/docs/cloud-systems-management/network-automation-and-management/catalyst-center/cisco-validated-solution-profiles/validated-profile-sda-deployment.html"
+      }
+    ],
+    "palabras_clave": [
+      "sd-access",
+      "sda",
+      "dna center",
+      "catalyst center",
+      "fabric",
+      "underlay",
+      "overlay",
+      "lisp",
+      "vxlan",
+      "trustsec",
+      "sgt",
+      "control plane node",
+      "edge node",
+      "border node"
+    ],
+    "contenido": "SD-Access es la aplicación de SDN de Cisco a la red de campus. Se arma en dos capas:\n\n- **Underlay:** la red física de switches y routers, toda enrutada en capa 3 (incluidos los switches de acceso), con un protocolo de ruteo como IS-IS u OSPF. Solo se encarga de que haya conectividad IP entre los equipos del fabric.\n- **Overlay:** redes virtuales que viajan **encapsuladas** sobre el underlay. Pueden correr varias redes virtuales aisladas sobre la misma red física, y una subred puede estirarse entre equipos que están físicamente separados.\n\n**Un protocolo por plano:**\n\n| Plano | Tecnología | Para qué |\n|---|---|---|\n| Control | **LISP** | Separa la **identidad** del equipo (su IP, EID) de su **ubicación** en la red (RLOC). Un equipo puede moverse sin cambiar de IP. |\n| Datos | **VXLAN** | Encapsula la trama Ethernet original dentro de IP (MAC-en-IP) para llevarla por el underlay. |\n| Políticas | **Cisco TrustSec (SGT)** | Aplica permisos por **grupo** (etiquetas SGT) en vez de por dirección IP. |\n\n**Roles de los equipos del fabric:**\n- **Control plane node:** el \"directorio\" (map-server/map-resolver). Sabe en qué punto del fabric está cada equipo final.\n- **Edge node:** el switch de acceso. Conecta a los usuarios, registra sus equipos en el control plane node, hace de gateway y encapsula y desencapsula VXLAN.\n- **Border node:** la salida del fabric hacia redes externas (otras sedes, datacenter, Internet).\n\n**Catalyst Center** (antes DNA Center) es el controlador/gestor central: **automatiza** el despliegue y la configuración de los equipos, **administra las políticas** por grupo (junto con Cisco ISE) y da **assurance** (monitoreo y análisis de salud de la red)."
+  },
+  {
+    "id": "sdn-planos-y-apis",
+    "tema": "sdn",
+    "subtema": "conceptos",
+    "titulo": "\"SDN: planos de datos, control y gestión; APIs northbound y southbound\"",
+    "nivel": "intermedio",
+    "plataforma": "generico",
+    "version": "RFC 7426",
+    "protocolo": "sdn",
+    "audiencia": [
+      "estudiante",
+      "profesional"
+    ],
+    "idioma": "es",
+    "estado": "publicado",
+    "verificacion": "fuentes-cruzadas",
+    "comandos_probados": false,
+    "fecha_revision": "2026-09-27",
+    "revisado_por": "Claude (fuentes cruzadas); sin prueba en equipo",
+    "fuentes": [
+      {
+        "titulo": "IETF RFC 7426 - SDN: Layers and Architecture Terminology",
+        "ubicacion": "§2 Terminology, §3 SDN Layers, §4.3 OpenFlow",
+        "url": "https://www.rfc-editor.org/rfc/rfc7426"
+      },
+      {
+        "titulo": "IBM - What Is Software-Defined Networking (SDN)?",
+        "ubicacion": "SDN architecture",
+        "url": "https://www.ibm.com/think/topics/sdn"
+      }
+    ],
+    "palabras_clave": [
+      "sdn",
+      "redes definidas por software",
+      "plano de datos",
+      "plano de control",
+      "plano de gestion",
+      "controlador",
+      "northbound api",
+      "southbound api",
+      "openflow",
+      "rest"
+    ],
+    "contenido": "Todo equipo de red hace tres tipos de trabajo, llamados **planos**:\n\n| Plano | Qué hace | Ejemplo |\n|---|---|---|\n| **Datos** (*forwarding*) | Mueve cada paquete: lo reenvía, lo descarta o lo modifica según las reglas que ya tiene. | Buscar la MAC/IP de destino y sacar el paquete por un puerto. |\n| **Control** | Decide **cómo** se debe reenviar y le entrega esas reglas al plano de datos. | Un protocolo de ruteo (ej. OSPF) calculando las mejores rutas. |\n| **Gestión** | Configura, monitorea y mantiene los equipos, en escalas de minutos a días. | SNMP, NETCONF, cambios de configuración. |\n\nEn una red tradicional, **cada router o switch tiene su propio plano de control**. En **SDN** (redes definidas por software), el plano de control se **separa** de los equipos y se centraliza en un **controlador** con visión de toda la red; los equipos se quedan principalmente con el plano de datos y obedecen las reglas que les manda el controlador.\n\n**APIs del controlador:**\n- **Southbound (hacia abajo):** por donde el controlador programa a los switches y routers. **OpenFlow** es el ejemplo clásico; también se usan protocolos de gestión.\n- **Northbound (hacia arriba):** por donde las aplicaciones y los scripts le piden cosas al controlador (típicamente **REST**), sin tener que hablar con cada equipo uno por uno.\n\nIdea clave: con SDN se automatiza pidiéndole al controlador (\"quiero que esta aplicación tenga esta política\") en lugar de entrar por CLI a configurar equipo por equipo."
+  },
+  {
+    "id": "switching-tabla-mac-aprendizaje",
+    "tema": "switching",
+    "subtema": "tabla-mac",
+    "titulo": "Cómo aprende y reenvía un switch (tabla MAC, flooding y aging)",
+    "nivel": "basico",
+    "plataforma": "ios",
+    "version": "IOS 15.2 / IOS XE",
+    "protocolo": "ethernet",
+    "audiencia": [
+      "estudiante",
+      "profesional"
+    ],
+    "idioma": "es",
+    "estado": "publicado",
+    "verificacion": "fuentes-cruzadas",
+    "comandos_probados": false,
+    "fecha_revision": "2026-09-27",
+    "revisado_por": "Claude (fuentes cruzadas); sin prueba en equipo",
+    "fuentes": [
+      {
+        "titulo": "Cisco Catalyst 2960 - Software Configuration Guide, IOS 15.2(1)E",
+        "ubicacion": "Administering the Switch - Managing the MAC Address Table",
+        "url": "https://www.cisco.com/c/en/us/td/docs/switches/lan/catalyst2960/software/release/15-2_1_e/configuration/guide/2960_scg/swadmin.html"
+      },
+      {
+        "titulo": "Cisco Catalyst 9000 - CDP, LLDP, MAC, and UDLD Configuration Guide",
+        "ubicacion": "Configure MAC",
+        "url": "https://www.cisco.com/c/en/us/td/docs/switches/lan/c9000/lyr2-fwd/cdp-lldp-mac-udld/cdp-lldp-mac-udld-configuration-guide/configure-mac.html"
+      }
+    ],
+    "palabras_clave": [
+      "tabla mac",
+      "cam",
+      "show mac address-table",
+      "aprendizaje mac",
+      "flooding",
+      "unicast desconocido",
+      "aging time",
+      "300 segundos",
+      "mac estatica"
+    ],
+    "contenido": "Un switch decide a qué puerto mandar cada trama con su **tabla de direcciones MAC** (también llamada tabla CAM). La llena así:\n\n1. **Aprende del origen:** cada vez que recibe una trama, mira la **MAC de origen** y anota \"esta MAC está detrás de este puerto, en esta VLAN\". Nunca aprende de la MAC de destino.\n2. **Reenvía según el destino:** si la **MAC de destino** ya está en la tabla, manda la trama solo por ese puerto.\n3. **Destino desconocido → flooding:** si la MAC de destino no está en la tabla, manda la trama por **todos los puertos de la misma VLAN, menos por el que entró**. Cuando el destino responda, el switch aprenderá su MAC y la próxima vez ya no inundará.\n\n**Aging:** las entradas dinámicas se borran si no llega ninguna trama desde esa MAC durante el tiempo de aging, que por defecto es **300 segundos** (5 minutos). Así la tabla no se queda con equipos que se desconectaron o se movieron de puerto.\n\n```\n! Cambiar el aging (10 a 1000000 segundos; 0 lo desactiva)\nSwitch(config)# mac address-table aging-time 600\n\n! Entrada estática: no envejece y se conserva al reiniciar\nSwitch(config)# mac address-table static 0011.2233.4455 vlan 10 interface gigabitethernet0/5\n```\n\nVerificación:\n```\nSwitch# show mac address-table\nSwitch# show mac address-table dynamic vlan 10\n```"
+  },
+  {
+    "id": "trunk-8021q-configuracion",
+    "tema": "vlan",
+    "subtema": "trunk",
+    "titulo": "Configurar un trunk 802.1Q (modos, VLAN nativa, VLAN permitidas)",
+    "nivel": "intermedio",
+    "plataforma": "ios",
+    "version": "IOS 15.2",
+    "protocolo": "802.1q",
+    "audiencia": [
+      "estudiante",
+      "profesional"
+    ],
+    "idioma": "es",
+    "estado": "publicado",
+    "verificacion": "fuentes-cruzadas",
+    "comandos_probados": false,
+    "fecha_revision": "2026-09-20",
+    "revisado_por": "Claude (fuentes cruzadas); sin prueba en equipo",
+    "fuentes": [
+      {
+        "titulo": "Cisco - Catalyst 2960, Configuring VLAN Trunks (IOS 15.2(2)E)",
+        "ubicacion": "Trunking",
+        "url": "https://www.cisco.com/c/en/us/td/docs/switches/lan/catalyst2960/software/release/15-2_2_e/configuration/guide/b_1522e_2960_2960c_2960s_2960sf_2960p_cg/m_1522e_vlan_trunk_2960s_cg.html"
+      },
+      {
+        "titulo": "Cisco - Catalyst 2960-X, Configuring VLAN Trunks (IOS 15.2(2)E)",
+        "ubicacion": "VLAN trunks",
+        "url": "https://www.cisco.com/c/en/us/td/docs/switches/lan/catalyst2960x/software/15-2_2_e/vlan/configuration_guide/b_vlan_1522e_2960x_cg/b_vlan_152ex_2960-x_cg_chapter_0100.html"
+      }
+    ],
+    "palabras_clave": [
+      "trunk",
+      "troncal",
+      "802.1q",
+      "dot1q",
+      "switchport mode trunk",
+      "vlan nativa",
+      "native vlan",
+      "allowed vlan",
+      "dtp",
+      "dynamic auto",
+      "nonegotiate",
+      "show interfaces trunk"
+    ],
+    "contenido": "```\nSwitch(config)# interface gigabitethernet0/1\nSwitch(config-if)# switchport mode trunk\nSwitch(config-if)# switchport trunk native vlan 99\nSwitch(config-if)# switchport trunk allowed vlan remove 30\n```\nComportamiento según la guía de Cisco:\n- **Modo predeterminado:** `dynamic auto` (negocia por DTP). Otros modos: `access`, `dynamic desirable`, `trunk`.\n- **VLAN nativa:** VLAN 1 por defecto. **Debe ser la misma en ambos extremos**; si no coincide, pueden aparecer **bucles de spanning-tree**.\n- **VLAN permitidas:** por defecto **todas** (1 a 4094). Se ajustan con `switchport trunk allowed vlan {add | all | except | remove} lista`.\n- Para un trunk hacia un equipo que no usa DTP: `switchport mode trunk` + `switchport nonegotiate` (el puerto queda en trunk sin enviar tramas DTP).\n\nVerificación:\n```\nSwitch# show interfaces gigabitethernet0/1 trunk\nSwitch# show interfaces gigabitethernet0/1 switchport\n```"
+  },
+  {
+    "id": "vlan-crear-y-asignar-puertos",
+    "tema": "vlan",
+    "subtema": "configuracion",
+    "titulo": "Crear una VLAN y asignar puertos de acceso",
+    "nivel": "basico",
+    "plataforma": "ios",
+    "version": "IOS 15.2",
+    "protocolo": "vlan",
+    "audiencia": [
+      "estudiante",
+      "profesional"
+    ],
+    "idioma": "es",
+    "estado": "publicado",
+    "verificacion": "fuentes-cruzadas",
+    "comandos_probados": false,
+    "fecha_revision": "2026-09-20",
+    "revisado_por": "Claude (fuentes cruzadas); sin prueba en equipo",
+    "fuentes": [
+      {
+        "titulo": "Cisco - Catalyst 2960, Configuring VLANs (IOS 15.2(2)E)",
+        "ubicacion": "Configuring VLANs",
+        "url": "https://www.cisco.com/c/en/us/td/docs/switches/lan/catalyst2960/software/release/15-2_2_e/configuration/guide/b_1522e_2960_2960c_2960s_2960sf_2960p_cg/m_1522e_vlan_vlan_2960s_cg.html"
+      },
+      {
+        "titulo": "Cisco - Catalyst 2960-X, Configuring VLANs (IOS 15.2(3)E)",
+        "ubicacion": "Normal-range VLANs",
+        "url": "https://www.cisco.com/c/en/us/td/docs/switches/lan/catalyst2960x/software/15-2_3_e/consolidated_guide/b_1523e_consolidated_2960x_cg/m_vlan_vlan_cg_2960-x.html"
+      }
+    ],
+    "palabras_clave": [
+      "vlan",
+      "crear vlan",
+      "nombre",
+      "switchport access vlan",
+      "switchport mode access",
+      "show vlan brief",
+      "puerto de acceso",
+      "rango de vlan",
+      "vlan 1"
+    ],
+    "contenido": "```\nSwitch(config)# vlan 10\nSwitch(config-vlan)# name VENTAS\nSwitch(config-vlan)# exit\nSwitch(config)# interface fastethernet0/1\nSwitch(config-if)# switchport mode access\nSwitch(config-if)# switchport access vlan 10\n```\nDatos de la guía de Cisco:\n- **Rango normal:** VLAN 1 a 1005. **Rango extendido:** 1006 a 4094 (con VTP versión 1 o 2 el switch debe estar en modo *transparent* para crearlas).\n- La VLAN 1 (y las 1002 a 1005) **no se pueden borrar**. La VLAN 1 es la predeterminada de todos los puertos.\n- Si asignas un puerto a una VLAN que **no existe**, esa VLAN se **crea**.\n- Si **borras** una VLAN, los puertos que tenía quedan **inactivos** hasta que los muevas a otra VLAN.\n\nVerificación:\n```\nSwitch# show vlan brief\nSwitch# show interfaces fastethernet0/1 switchport\n```"
+  }
+]

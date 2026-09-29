@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+  <files>
+    <file>lib/**.dart</file>
+  </files>
+  <commands>
+    <command group="test" expected-return="0" working-directory=".">C:\flutter\bin\flutter.bat test --no-pub --fail-fast</command>
+  </commands>
+  <threshold failure="100"/>
+</mutations>

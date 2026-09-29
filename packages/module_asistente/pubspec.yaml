@@ -1,0 +1,23 @@
+name: module_asistente
+description: "Módulo de Nettia: asistente NETIA (chat con IA) sobre el contrato AiDiagnosisService."
+publish_to: "none"
+version: 0.1.0
+
+environment:
+  sdk: ">=3.7.0 <4.0.0"
+
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+  nettia_core:
+    path: ../nettia_core
+  flutter_markdown_plus: ^1.0.12
+  markdown: ^7.3.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  shared_preferences: ^2.3.5

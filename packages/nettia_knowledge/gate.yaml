@@ -1,0 +1,41 @@
+version: 1
+base_diff: HEAD
+puertas:
+  tests:
+    {
+      comando: "flutter test --file-reporter=json:reports/tests.json",
+      formato: dart-json,
+      reporte: reports/tests.json,
+    }
+  cobertura:
+    {
+      comando: "flutter test --coverage",
+      formato: lcov,
+      reporte: coverage/lcov.info,
+    }
+  complejidad:
+    {
+      comando: "dart pub global run dart_code_linter:metrics analyze lib --reporter=json --json-path=reports/metrics.json",
+      formato: dart-code-linter,
+      reporte: reports/metrics.json,
+    }
+  # Pendiente de verdad (ver informe): mutation_test es lento y ademas
+  # dejo evidenciado que puede abortar sin revertir un mutante si el
+  # comando de tests falla de forma anomala. Placeholder por ahora;
+  mutacion:
+    {
+      comando: "dart pub global run mutation_test -q -b -r gate_dart_reglas.xml -f xunit -o reports/mutacion mutacion.xml",
+      formato: mutation-test-xunit,
+      reporte: reports/mutacion/mutation-test.xunit.xml,
+    }
+  duplicacion:
+    {
+      comando: "jscpd lib --reporters json --output reports/jscpd --min-lines 5 --min-tokens 1",
+      formato: jscpd-json,
+      reporte: reports/jscpd/jscpd-report.json,
+    }
+  ciclos:
+    {
+      comando: "dart pub global run lakos --no-cycles-allowed lib",
+      formato: exit-code,
+    }
