@@ -12,9 +12,10 @@ class RangoIp {
   bool contiene(int ip) => ip >= desde && ip <= hasta;
 
   @override
-  String toString() => desde == hasta
-      ? ipATexto(desde)
-      : '${ipATexto(desde)} – ${ipATexto(hasta)}';
+  String toString() =>
+      desde == hasta
+          ? ipATexto(desde)
+          : '${ipATexto(desde)} – ${ipATexto(hasta)}';
 }
 
 /// `null` si [texto] no es una IPv4 con 4 octetos de 0 a 255.

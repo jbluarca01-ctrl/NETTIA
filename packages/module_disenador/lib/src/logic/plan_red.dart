@@ -114,7 +114,10 @@ PlanRed planificarRed(
   try {
     vlsm = calcularVlsm(redBase, cidr, [
       for (var i = 0; i < segmentos.length; i++)
-        RequerimientoVlsm(nombres[i], _necesarias(segmentos[i].hosts, opciones)),
+        RequerimientoVlsm(
+          nombres[i],
+          _necesarias(segmentos[i].hosts, opciones),
+        ),
     ]);
   } on SubneteoException catch (e) {
     throw DisenoException(e.mensaje);
@@ -126,8 +129,12 @@ PlanRed planificarRed(
     opciones: opciones,
     segmentos: [
       for (final sub in vlsm.subredes)
-        _segmentoPlan(sub, vlans[indice[sub.nombre]!],
-            segmentos[indice[sub.nombre]!].hosts, opciones),
+        _segmentoPlan(
+          sub,
+          vlans[indice[sub.nombre]!],
+          segmentos[indice[sub.nombre]!].hosts,
+          opciones,
+        ),
     ],
     direccionesLibres: vlsm.direccionesLibres,
     avisos: vlsm.avisos,
@@ -142,8 +149,10 @@ void _validarOpciones(OpcionesPlan o) {
     throw const DisenoException('El crecimiento no puede ser negativo.');
   }
   if (o.vlanNativa != 1 && !_vlanValida(o.vlanNativa)) {
-    throw DisenoException('La VLAN nativa ${o.vlanNativa} no es válida: '
-        'usa 2–1001 o 1006–4094.');
+    throw DisenoException(
+      'La VLAN nativa ${o.vlanNativa} no es válida: '
+      'usa 2–1001 o 1006–4094.',
+    );
   }
 }
 
@@ -187,23 +196,31 @@ List<int> _vlans(List<Segmento> segmentos, List<String> nombres, int nativa) {
 
 /// Valida las VLAN pedidas explícitamente y las devuelve con su segmento.
 Map<int, String> _vlansExplicitas(
-    List<Segmento> segmentos, List<String> nombres, int nativa) {
+  List<Segmento> segmentos,
+  List<String> nombres,
+  int nativa,
+) {
   final usadas = <int, String>{};
   for (var i = 0; i < segmentos.length; i++) {
     final v = segmentos[i].vlan;
     if (v == null) continue;
     if (!_vlanValida(v)) {
-      throw DisenoException('La VLAN $v no es válida para "${nombres[i]}": '
-          'usa 2–1001 o 1006–4094 (la 1 y la 1002–1005 están reservadas).');
+      throw DisenoException(
+        'La VLAN $v no es válida para "${nombres[i]}": '
+        'usa 2–1001 o 1006–4094 (la 1 y la 1002–1005 están reservadas).',
+      );
     }
     if (v == nativa) {
-      throw DisenoException('La VLAN $v de "${nombres[i]}" es la VLAN nativa; '
-          'la nativa no debe llevar usuarios.');
+      throw DisenoException(
+        'La VLAN $v de "${nombres[i]}" es la VLAN nativa; '
+        'la nativa no debe llevar usuarios.',
+      );
     }
     final previo = usadas[v];
     if (previo != null) {
       throw DisenoException(
-          'La VLAN $v está repetida ("$previo" y "${nombres[i]}").');
+        'La VLAN $v está repetida ("$previo" y "${nombres[i]}").',
+      );
     }
     usadas[v] = nombres[i];
   }
@@ -224,13 +241,19 @@ int _necesarias(int hosts, OpcionesPlan o) =>
     (hosts * (100 + o.crecimientoPct) + 99) ~/ 100 + o.reservadas + 1;
 
 SegmentoPlan _segmentoPlan(
-    SubredIpv4 sub, int vlan, int hostsPedidos, OpcionesPlan o) {
+  SubredIpv4 sub,
+  int vlan,
+  int hostsPedidos,
+  OpcionesPlan o,
+) {
   final red = ipANumero(sub.red)!;
   final broadcast = ipANumero(sub.broadcast)!;
   final alFinal = o.gatewayAlFinal;
   final libreDesde = alFinal ? red + 1 : red + 2;
   final dhcp = RangoIp(
-      libreDesde + o.reservadas, alFinal ? broadcast - 2 : broadcast - 1);
+    libreDesde + o.reservadas,
+    alFinal ? broadcast - 2 : broadcast - 1,
+  );
   return SegmentoPlan(
     nombre: sub.nombre!,
     vlan: vlan,
@@ -239,9 +262,10 @@ SegmentoPlan _segmentoPlan(
     mascara: sub.mascara,
     wildcard: ipATexto(broadcast - red),
     gateway: ipATexto(alFinal ? broadcast - 1 : red + 1),
-    reservadas: o.reservadas == 0
-        ? null
-        : RangoIp(libreDesde, libreDesde + o.reservadas - 1),
+    reservadas:
+        o.reservadas == 0
+            ? null
+            : RangoIp(libreDesde, libreDesde + o.reservadas - 1),
     dhcp: dhcp,
     broadcast: sub.broadcast,
     hostsPedidos: hostsPedidos,

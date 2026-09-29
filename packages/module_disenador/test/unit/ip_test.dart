@@ -41,10 +41,14 @@ void main() {
     });
 
     test('se muestra como una IP o como desde – hasta', () {
-      expect(RangoIp(ipANumero('10.0.0.5')!, ipANumero('10.0.0.5')!).toString(),
-          '10.0.0.5');
-      expect(RangoIp(ipANumero('10.0.0.1')!, ipANumero('10.0.0.9')!).toString(),
-          '10.0.0.1 – 10.0.0.9');
+      expect(
+        RangoIp(ipANumero('10.0.0.5')!, ipANumero('10.0.0.5')!).toString(),
+        '10.0.0.5',
+      );
+      expect(
+        RangoIp(ipANumero('10.0.0.1')!, ipANumero('10.0.0.9')!).toString(),
+        '10.0.0.1 – 10.0.0.9',
+      );
     });
   });
 }
