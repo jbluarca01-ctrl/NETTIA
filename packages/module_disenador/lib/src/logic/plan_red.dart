@@ -172,6 +172,22 @@ List<String> _nombres(List<Segmento> segmentos) {
 bool _vlanValida(int v) => (v >= 2 && v <= 1001) || (v >= 1006 && v <= 4094);
 
 List<int> _vlans(List<Segmento> segmentos, List<String> nombres, int nativa) {
+  final usadas = _vlansExplicitas(segmentos, nombres, nativa);
+  final vlans = <int>[];
+  var automatica = 0;
+  for (final s in segmentos) {
+    final explicita = s.vlan;
+    if (explicita == null) {
+      automatica = _siguienteLibre(automatica, usadas, nativa);
+    }
+    vlans.add(explicita ?? automatica);
+  }
+  return vlans;
+}
+
+/// Valida las VLAN pedidas explícitamente y las devuelve con su segmento.
+Map<int, String> _vlansExplicitas(
+    List<Segmento> segmentos, List<String> nombres, int nativa) {
   final usadas = <int, String>{};
   for (var i = 0; i < segmentos.length; i++) {
     final v = segmentos[i].vlan;
@@ -191,16 +207,7 @@ List<int> _vlans(List<Segmento> segmentos, List<String> nombres, int nativa) {
     }
     usadas[v] = nombres[i];
   }
-  final vlans = <int>[];
-  var automatica = 0;
-  for (final s in segmentos) {
-    final explicita = s.vlan;
-    if (explicita == null) {
-      automatica = _siguienteLibre(automatica, usadas, nativa);
-    }
-    vlans.add(explicita ?? automatica);
-  }
-  return vlans;
+  return usadas;
 }
 
 int _siguienteLibre(int anterior, Map<int, String> usadas, int nativa) {
