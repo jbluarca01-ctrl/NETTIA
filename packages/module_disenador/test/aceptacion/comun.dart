@@ -3,13 +3,25 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:gherkart/gherkart.dart';
 import 'package:gherkart/gherkart_io.dart';
 
+/// Tester del escenario en curso: cada escenario corre como `testWidgets`
+/// para que los pasos puedan construir pantallas.
+late WidgetTester probador;
+
 void _test(
   String name, {
   List<String>? tags,
   bool skip = false,
   Future<void> Function(void context)? callback,
 }) {
-  test(name, () => callback!(null), tags: tags, skip: skip);
+  testWidgets(
+    name,
+    (tester) async {
+      probador = tester;
+      await callback!(null);
+    },
+    tags: tags,
+    skip: skip,
+  );
 }
 
 TestAdapter<void> _adaptador() => TestAdapter<void>(
