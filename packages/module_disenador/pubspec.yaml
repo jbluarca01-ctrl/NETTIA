@@ -1,5 +1,5 @@
-name: module_comandos
-description: "Módulo de Nettia: comandos CLI Cisco IOS y plantillas de configuración."
+name: module_disenador
+description: "Módulo de Nettia: diseñador de red de requisitos a configuración, verificación y auditoría."
 publish_to: "none"
 version: 0.1.0
 
@@ -13,6 +13,8 @@ dependencies:
     sdk: flutter
   nettia_core:
     path: ../nettia_core
+  module_calculadora:
+    path: ../module_calculadora
 
 dev_dependencies:
   flutter_test:

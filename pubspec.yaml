@@ -39,3 +39,4 @@ workspace:
   - packages/module_comandos
   - packages/module_guia
   - packages/module_asistente
+  - packages/module_disenador
