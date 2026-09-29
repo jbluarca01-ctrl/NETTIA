@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:nettia_ai/nettia_ai.dart';
 import 'package:nettia_core/nettia_core.dart';
 
@@ -48,6 +49,10 @@ class _NettiaAppState extends State<NettiaApp> {
       themeMode: AppearanceController.instance.themeMode,
       theme: NetworkTheme.lightTheme,
       darkTheme: NetworkTheme.darkTheme,
+      // Textos del sistema (diálogos, selectores, menús) en español.
+      locale: const Locale('es'),
+      supportedLocales: const [Locale('es')],
+      localizationsDelegates: GlobalMaterialLocalizations.delegates,
       // El perfil (estudiante/profesional) va antes que todo lo demás: sin
       // perfil guardado no se muestra ni el splash ni el menú.
       home: UserProfileService.instance.hasProfile

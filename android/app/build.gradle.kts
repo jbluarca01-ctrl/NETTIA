@@ -1,7 +1,19 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+}
+
+// Clave de publicación: android/key.properties (nunca se sube al repositorio).
+// Las contraseñas pueden omitirse del archivo y darse en las variables de
+// entorno NETTIA_STORE_PASSWORD y NETTIA_KEY_PASSWORD al compilar.
+val keystorePropertiesFile = rootProject.file("key.properties")
+val keystoreProperties = Properties()
+if (keystorePropertiesFile.exists()) {
+    FileInputStream(keystorePropertiesFile).use { keystoreProperties.load(it) }
 }
 
 android {
@@ -29,11 +41,28 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        create("release") {
+            keyAlias = keystoreProperties["keyAlias"] as String?
+            keyPassword = System.getenv("NETTIA_KEY_PASSWORD")
+                ?: keystoreProperties["keyPassword"] as String?
+            storeFile = (keystoreProperties["storeFile"] as String?)?.let { file(it) }
+            storePassword = System.getenv("NETTIA_STORE_PASSWORD")
+                ?: keystoreProperties["storePassword"] as String?
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            // Sin key.properties (compilación local) se firma con la clave de
+            // depuración; Google Play rechaza esa firma, así que nunca llega
+            // a publicarse por error.
+            signingConfig = if (keystorePropertiesFile.exists()) {
+                signingConfigs.getByName("release")
+            } else {
+                logger.warn("Nettia: falta android/key.properties; release firmado con la clave de depuración.")
+                signingConfigs.getByName("debug")
+            }
         }
     }
 }
