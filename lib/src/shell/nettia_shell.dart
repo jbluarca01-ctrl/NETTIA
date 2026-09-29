@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:module_asistente/module_asistente.dart';
 import 'package:module_calculadora/module_calculadora.dart';
 import 'package:module_comandos/module_comandos.dart';
+import 'package:module_disenador/module_disenador.dart';
 import 'package:module_guia/module_guia.dart';
 import 'package:nettia_ai/nettia_ai.dart';
 import 'package:nettia_core/nettia_core.dart';
@@ -27,6 +28,7 @@ class _NettiaShellState extends State<NettiaShell> {
     NettiaModulo.comandos: 'Comandos CLI & Plantillas',
     NettiaModulo.asistente: 'Asistente NETIA',
     NettiaModulo.guia: 'Guía Metodológica',
+    NettiaModulo.disenador: 'Diseñador de Red',
   };
 
   UserProfile get _perfil =>
@@ -41,6 +43,7 @@ class _NettiaShellState extends State<NettiaShell> {
         NettiaModulo.comandos => const ComandosScreen(),
         NettiaModulo.asistente => AsistenteScreen(aiService: widget.aiService),
         NettiaModulo.guia => const GuiaScreen(),
+        NettiaModulo.disenador => const DisenadorScreen(),
       };
 
   @override

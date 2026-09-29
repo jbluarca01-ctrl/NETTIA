@@ -62,6 +62,13 @@ class NetworkDrawer extends StatelessWidget {
         accent2,
         NettiaModulo.guia,
       ),
+      _ModuleItem(
+        NettiaIcons.diagrama,
+        'Diseñador de Red',
+        'Plan, configuración, verificación y auditoría',
+        accent,
+        NettiaModulo.disenador,
+      ),
     ];
 
     return Drawer(

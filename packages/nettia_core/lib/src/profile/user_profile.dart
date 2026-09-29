@@ -6,7 +6,8 @@ enum NettiaModulo {
   calculadora(soloProfesional: false),
   comandos(soloProfesional: false),
   asistente(soloProfesional: false),
-  guia(soloProfesional: false);
+  guia(soloProfesional: false),
+  disenador(soloProfesional: false);
 
   const NettiaModulo({required this.soloProfesional});
 

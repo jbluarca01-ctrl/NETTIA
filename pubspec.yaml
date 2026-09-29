@@ -23,6 +23,8 @@ dependencies:
     path: packages/module_guia
   module_asistente:
     path: packages/module_asistente
+  module_disenador:
+    path: packages/module_disenador
 
 dev_dependencies:
   flutter_test:
