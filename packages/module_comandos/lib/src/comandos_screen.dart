@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:nettia_core/nettia_core.dart';
 
+import 'doctor_tab.dart';
 import 'explicar_tab.dart';
 
 class _CommandSnippet {
@@ -24,6 +25,14 @@ class ComandosScreen extends StatefulWidget {
 }
 
 class _ComandosScreenState extends State<ComandosScreen> {
+  final _doctor = DoctorConsolaControlador();
+
+  @override
+  void dispose() {
+    _doctor.dispose();
+    super.dispose();
+  }
+
   static const List<_CommandSnippet> _switchCommands = <_CommandSnippet>[
     _CommandSnippet(
       title: 'Entrar a modo privilegiado',
@@ -187,7 +196,7 @@ class _ComandosScreenState extends State<ComandosScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return DefaultTabController(
-      length: 5,
+      length: 6,
       child: Column(
         children: <Widget>[
           TabBar(
@@ -204,6 +213,7 @@ class _ComandosScreenState extends State<ComandosScreen> {
               Tab(icon: Icon(NettiaIcons.validado, size: 18), text: 'Auditoría IOS', iconMargin: EdgeInsets.only(bottom: 2)),
               Tab(icon: Icon(NettiaIcons.pc, size: 18), text: 'Pruebas CMD', iconMargin: EdgeInsets.only(bottom: 2)),
               Tab(icon: Icon(NettiaIcons.libro, size: 18), text: 'Explicar salida', iconMargin: EdgeInsets.only(bottom: 2)),
+              Tab(icon: Icon(NettiaIcons.aviso, size: 18), text: 'Doctor', iconMargin: EdgeInsets.only(bottom: 2)),
             ],
           ),
           Expanded(
@@ -214,6 +224,7 @@ class _ComandosScreenState extends State<ComandosScreen> {
                 _buildSnippetList(_auditCommands),
                 _buildSnippetList(_terminalCommands),
                 const ExplicarSalidaTab(),
+                DoctorConsolaTab(_doctor),
               ],
             ),
           ),
