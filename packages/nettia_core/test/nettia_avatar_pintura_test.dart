@@ -100,7 +100,7 @@ void main() {
       expect(_paint(l).strokeCap, StrokeCap.round);
     }
     expect(_paint(lineas[0]).color.toARGB32(), (linea)!.toARGB32());
-    expect(_paint(lineas[1]).color.toARGB32(), (linea)!.toARGB32());
+    expect(_paint(lineas[1]).color.toARGB32(), (linea).toARGB32());
     expect(_paint(lineas[2]).color.toARGB32(), _esquema.primary.toARGB32());
 
     final circulos = _de(llamadas, #drawCircle).toList();
