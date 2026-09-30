@@ -1,6 +1,8 @@
 // Genera los íconos de lanzamiento de Android a partir del logo de Nettia.
 //
-// No corre en la suite normal. Para regenerar:
+// En la suite normal los genera en una carpeta temporal y verifica que los
+// PNG versionados en android/app/src/main/res sean idénticos (el logo y los
+// íconos no pueden divergir). Para regenerar los versionados:
 //   GENERATE_ICONS=1 flutter test test/tool/generate_icons_test.dart
 import 'dart:io';
 import 'dart:ui' as ui;
@@ -47,7 +49,11 @@ void main() {
     'genera los íconos de Nettia (legado y adaptativo)',
     (tester) async {
       final res = '${Directory.current.path}/android/app/src/main/res';
+      final tmp = generar ? null : Directory.systemTemp.createTempSync('iconos_');
+      addTearDown(() => tmp?.deleteSync(recursive: true));
+      final salida = tmp?.path ?? res;
       for (final carpeta in _escala.keys) {
+        Directory('$salida/$carpeta').createSync(recursive: true);
         final d = _escala[carpeta]!;
 
         // Ícono clásico 48 dp: fondo redondeado + logo.
@@ -72,7 +78,7 @@ void main() {
             ),
           ),
         );
-        await _guardar(tester, k1, '$res/$carpeta/ic_launcher.png');
+        await _guardar(tester, k1, '$salida/$carpeta/ic_launcher.png');
 
         // Primer plano adaptativo 108 dp (el sistema recorta ~1/3 exterior).
         final adaptativo = (108 * d).roundToDouble();
@@ -91,10 +97,19 @@ void main() {
             ),
           ),
         );
-        await _guardar(tester, k2, '$res/$carpeta/ic_launcher_foreground.png');
+        await _guardar(tester, k2, '$salida/$carpeta/ic_launcher_foreground.png');
       }
       await tester.binding.setSurfaceSize(null);
+
+      for (final carpeta in _escala.keys) {
+        for (final png in ['ic_launcher.png', 'ic_launcher_foreground.png']) {
+          expect(
+            File('$salida/$carpeta/$png').readAsBytesSync(),
+            File('$res/$carpeta/$png').readAsBytesSync(),
+            reason: '$carpeta/$png difiere del logo actual; regenerar con GENERATE_ICONS=1',
+          );
+        }
+      }
     },
-    skip: !generar,
   );
 }
