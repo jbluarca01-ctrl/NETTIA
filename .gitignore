@@ -50,3 +50,10 @@ app.*.map.json
 # Artefactos de pruebas: imágenes de goldens fallidos y reportes HTML de mutation_test
 **/test/golden/failures/
 **/mutation-test-report/
+
+# Heredado del .gitignore de PRAXIA al separar el repo (2026-09-29): artefactos
+# de build, cobertura y reportes del gate en la app y en cada paquete.
+build/
+coverage/
+reports/
+.metadata
