@@ -59,5 +59,14 @@
     <regex pattern="(late\s+[^=;\n]*=\s*)(-?[0-9]+)" id="gate.late.int">
       <mutation text="$1 ($2 + 1)"/>
     </regex>
+    <!-- Mutación declarativa: literales pasados como argumento (configuración,
+         textos, valores de enum). Un cambio que solo declara valores también
+         debe quedar verificado por un test que note si el valor cambia. -->
+    <regex pattern="(\b[A-Za-z_]\w*:\s*)(true|false)\b" id="gate.arg.bool">
+      <mutation text="$1 !$2"/>
+    </regex>
+    <regex pattern="([(,:]\s*)(&apos;[^&apos;\n$\\]*&apos;|&quot;[^&quot;\n$\\]*&quot;)(?=\s*[,)])" id="gate.arg.string">
+      <mutation text="$1 $2 + &apos;x&apos;"/>
+    </regex>
   </rules>
 </mutations>
