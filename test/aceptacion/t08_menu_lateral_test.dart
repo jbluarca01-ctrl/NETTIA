@@ -109,7 +109,48 @@ final _pasos = StepRegistry<void>.fromMap({
     expect(_mundo.elegido, isNull);
     expect(_mundo.ajustes, 0);
   },
+  'el diálogo Acerca de muestra los textos'.mapper(): (_, ctx) async {
+    for (final fila in ctx.tableRows) {
+      expect(
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.text(fila['texto']!),
+        ),
+        findsOneWidget,
+        reason: fila['texto'],
+      );
+    }
+  },
+  'el diálogo Acerca de muestra la licencia de Praxia Dynamic'.mapper(): (
+    _,
+    ctx,
+  ) async {
+    expect(find.text(_licencia), findsOneWidget);
+  },
+  'toco el botón "{b}" del diálogo'.mapper(): (_, ctx) async {
+    await probador.tap(find.text(ctx.arg<String>(0)));
+    // La página de licencias carga de forma asíncrona: se avanza la
+    // transición sin esperar a que todo quede quieto.
+    await probador.pump();
+    await probador.pump(const Duration(seconds: 1));
+  },
+  'el diálogo Acerca de se cerró'.mapper(): (_, ctx) async {
+    expect(find.byType(AlertDialog), findsNothing);
+  },
+  'veo la página de licencias de "{app}" versión "{v}"'.mapper(): (
+    _,
+    ctx,
+  ) async {
+    final pagina = probador.widget<LicensePage>(find.byType(LicensePage));
+    expect(pagina.applicationName, ctx.arg<String>(0));
+    expect(pagina.applicationVersion, ctx.arg<String>(1));
+  },
 });
+
+const _licencia =
+    '© 2026 Praxia Dynamic. Licencia personal e intransferible: prohibido '
+    'copiar, compartir o revender. Nettia es un proyecto independiente: '
+    'Cisco, CCNA y Packet Tracer son marcas de sus respectivos propietarios.';
 
 Future<void> main() async {
   await correrFeature('t08_menu_lateral.feature', _pasos);

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:nettia/src/widgets/acerca_de_dialogo.dart';
 import 'package:nettia/src/widgets/drawer_cabecera.dart';
 import 'package:nettia/src/widgets/network_drawer.dart';
 import 'package:nettia_core/nettia_core.dart';
@@ -105,6 +106,23 @@ void main() {
     });
   });
 
+  group('AcercaDeDialogo', () {
+    testWidgets('el logo usa los colores del tema y el título es Nettia', (
+      tester,
+    ) async {
+      await _montar(tester, const AcercaDeDialogo());
+      final tema = NetworkTheme.darkTheme;
+      final logo = tester.widget<NettiaLogo>(find.byType(NettiaLogo));
+      // Mismo color que antes se tomaba de textTheme.bodyLarge.
+      expect(logo.color, tema.textTheme.bodyLarge!.color);
+      expect(logo.color, tema.colorScheme.onSurface);
+      expect(logo.accent, tema.colorScheme.primary);
+      expect(logo.accent2, tema.colorScheme.tertiary);
+      expect(logo.size, 22);
+      expect(find.text('Nettia'), findsOneWidget);
+    });
+  });
+
   group('NetworkDrawer', () {
     testWidgets('oscuro coincide con la referencia', (tester) async {
       await _montar(tester, _menu(noLeidos: 3));
@@ -119,6 +137,30 @@ void main() {
       await expectLater(
         find.byKey(_marco),
         matchesGoldenFile('golden/goldens/menu_lateral_claro.png'),
+      );
+    });
+
+    testWidgets('el diálogo Acerca de coincide con la referencia', (
+      tester,
+    ) async {
+      final andamio = GlobalKey<ScaffoldState>();
+      tester.view.physicalSize = const Size(400, 1000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: NetworkTheme.darkTheme,
+          home: Scaffold(key: andamio, drawer: _menu()),
+        ),
+      );
+      andamio.currentState!.openDrawer();
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Acerca de Nettia'));
+      await tester.pumpAndSettle();
+      await expectLater(
+        find.byType(AlertDialog),
+        matchesGoldenFile('golden/goldens/acerca_de_oscuro.png'),
       );
     });
 

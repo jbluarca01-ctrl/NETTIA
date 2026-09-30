@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:nettia_ai/nettia_ai.dart';
 import 'package:nettia_core/nettia_core.dart';
 
+import 'acerca_de_dialogo.dart';
 import 'drawer_cabecera.dart';
 
 /// Menú lateral (hamburguesa) de Nettia — marca, lista plana de módulos
@@ -247,69 +248,7 @@ class NetworkDrawer extends StatelessWidget {
   }
 
   void _showAbout(BuildContext context) {
-    showDialog<void>(
-      context: context,
-      builder:
-          (ctx) => AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(NetworkTheme.radiusLg),
-            ),
-            title: Row(
-              children: [
-                NettiaLogo(
-                  size: 22,
-                  color: Theme.of(ctx).textTheme.bodyLarge?.color,
-                  accent: Theme.of(ctx).colorScheme.primary,
-                  accent2: Theme.of(ctx).colorScheme.tertiary,
-                ),
-                const SizedBox(width: 10),
-                const Text('Nettia'),
-              ],
-            ),
-            content: const Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Suite integral de ingeniería para conmutación, enrutamiento y redes industriales.',
-                  style: TextStyle(fontSize: 13),
-                ),
-                SizedBox(height: 12),
-                Text(
-                  '• Calculadoras: subredes, dividir, VLSM, IPv6, conversiones y práctica',
-                ),
-                Text('• Plantillas Cisco IOS para VLANs y Router-on-a-stick'),
-                Text(
-                  '• Asistente NETIA con base local con fuentes y multi-proveedor de IA',
-                ),
-                Text('• Guía metodológica de 5 capas'),
-                SizedBox(height: 12),
-                Text(
-                  '© 2026 Praxia Dynamic. Licencia personal e intransferible: prohibido copiar, compartir o revender. '
-                  'Nettia es un proyecto independiente: Cisco, CCNA y Packet Tracer son marcas de sus respectivos propietarios.',
-                  style: TextStyle(fontSize: 11.5),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(ctx).pop();
-                  showLicensePage(
-                    context: context,
-                    applicationName: 'Nettia',
-                    applicationVersion: '1.0.0',
-                  );
-                },
-                child: const Text('Licencias de terceros'),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.of(ctx).pop(),
-                child: const Text('Entendido'),
-              ),
-            ],
-          ),
-    );
+    showDialog<void>(context: context, builder: (_) => const AcercaDeDialogo());
   }
 }
 
