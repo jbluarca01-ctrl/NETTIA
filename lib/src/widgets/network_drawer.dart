@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:nettia_ai/nettia_ai.dart';
 import 'package:nettia_core/nettia_core.dart';
 
+import 'drawer_cabecera.dart';
+
 /// Menú lateral (hamburguesa) de Nettia — marca, lista plana de módulos
 /// (sin submenús) y sección de sistema.
 class NetworkDrawer extends StatelessWidget {
@@ -25,52 +27,6 @@ class NetworkDrawer extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final settings = AiSettingsService.instance;
-    final isOffline =
-        settings.activeProvider.name == 'offline' ||
-        settings.offlinePreferred ||
-        settings.currentActiveKey.isEmpty;
-    final accent = theme.colorScheme.primary;
-    final accent2 = theme.colorScheme.tertiary;
-
-    final modules = <_ModuleItem>[
-      _ModuleItem(
-        NettiaIcons.calculadora,
-        'Calculadora de Subredes',
-        'IPv4, CIDR y desglose binario',
-        accent,
-        NettiaModulo.calculadora,
-      ),
-      _ModuleItem(
-        NettiaIcons.comandos,
-        'Comandos CLI & Plantillas',
-        'VLANs, Router-on-a-stick y pruebas',
-        accent2,
-        NettiaModulo.comandos,
-      ),
-      _ModuleItem(
-        NettiaIcons.asistente,
-        'Asistente NETIA',
-        'Diagnóstico IA & protocolos OT',
-        accent,
-        NettiaModulo.asistente,
-        badge: netiaUnreadCount,
-      ),
-      _ModuleItem(
-        NettiaIcons.guia,
-        'Guía Metodológica',
-        'Los 5 pasos de configuración',
-        accent2,
-        NettiaModulo.guia,
-      ),
-      _ModuleItem(
-        NettiaIcons.diagrama,
-        'Diseñador de Red',
-        'Plan, configuración, verificación y auditoría',
-        accent,
-        NettiaModulo.disenador,
-      ),
-    ];
-
     return Drawer(
       backgroundColor:
           isDark ? NetworkTheme.darkSurface : NetworkTheme.lightBase,
@@ -81,148 +37,125 @@ class NetworkDrawer extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.only(
-              top: 50,
-              bottom: 18,
-              left: 18,
-              right: 18,
-            ),
-            child: Row(
-              children: [
-                NettiaLogo(
-                  size: 28,
-                  color: theme.textTheme.bodyLarge?.color,
-                  accent: accent,
-                  accent2: accent2,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Nettia',
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Row(
-                        children: [
-                          Container(
-                            width: 7,
-                            height: 7,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color:
-                                  isOffline
-                                      ? NetworkTheme.amberAlert
-                                      : NetworkTheme.ledGreen,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            isOffline ? 'MODO OFFLINE' : 'AI EN LÍNEA',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color:
-                                  isOffline
-                                      ? NetworkTheme.amberAlert
-                                      : NetworkTheme.ledGreen,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+          DrawerCabecera(
+            offline: iaSinConexion(
+              proveedor: settings.activeProvider.name,
+              offlinePreferido: settings.offlinePreferred,
+              clave: settings.currentActiveKey,
             ),
           ),
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              children: [
-                _sectionLabel('MÓDULOS'),
-                // Un módulo restringido no aparece: el perfil no lo ve, así que
-                // tampoco puede seleccionarlo.
-                for (final m in modules.where((m) => profile.puedeUsar(m.modulo)))
-                  _row(
-                    context,
-                    icon: m.icon,
-                    title: m.title,
-                    subtitle: m.subtitle,
-                    color: m.color,
-                    selected: current == m.modulo,
-                    badge: m.badge,
-                    onTap: () {
-                      Navigator.of(context).pop();
-                      onSelectModule(m.modulo);
-                    },
-                  ),
-                const SizedBox(height: 12),
-                _sectionLabel('SISTEMA'),
-                _row(
-                  context,
-                  icon: NettiaIcons.ajustes,
-                  title: 'Configuración & IA',
-                  subtitle: 'Motores IA, apariencia y modelos',
-                  color: NetworkTheme.amberAlert,
-                  selected: false,
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    onOpenSettings();
-                  },
-                ),
-                _row(
-                  context,
-                  icon: NettiaIcons.acercaDe,
-                  title: 'Acerca de Nettia',
-                  subtitle: 'Versión 1.0.0',
-                  color:
-                      isDark
-                          ? NetworkTheme.darkTextMuted
-                          : NetworkTheme.lightTextSecondary,
-                  selected: false,
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    _showAbout(context);
-                  },
-                ),
-              ],
-            ),
+          Expanded(child: _lista(context, isDark)),
+          _pie(isDark),
+        ],
+      ),
+    );
+  }
+
+  /// Módulos del menú en orden; el color alterna entre los dos acentos.
+  List<_ModuleItem> _modulos(ColorScheme esquema) => [
+    _ModuleItem(
+      NettiaIcons.calculadora,
+      'Calculadora de Subredes',
+      'IPv4, CIDR y desglose binario',
+      esquema.primary,
+      NettiaModulo.calculadora,
+    ),
+    _ModuleItem(
+      NettiaIcons.comandos,
+      'Comandos CLI & Plantillas',
+      'VLANs, Router-on-a-stick y pruebas',
+      esquema.tertiary,
+      NettiaModulo.comandos,
+    ),
+    _ModuleItem(
+      NettiaIcons.asistente,
+      'Asistente NETIA',
+      'Diagnóstico IA & protocolos OT',
+      esquema.primary,
+      NettiaModulo.asistente,
+      badge: netiaUnreadCount,
+    ),
+    _ModuleItem(
+      NettiaIcons.guia,
+      'Guía Metodológica',
+      'Los 5 pasos de configuración',
+      esquema.tertiary,
+      NettiaModulo.guia,
+    ),
+    _ModuleItem(
+      NettiaIcons.diagrama,
+      'Diseñador de Red',
+      'Plan, configuración, verificación y auditoría',
+      esquema.primary,
+      NettiaModulo.disenador,
+    ),
+  ];
+
+  Widget _lista(BuildContext context, bool isDark) {
+    final modulos = _modulos(Theme.of(context).colorScheme);
+    return ListView(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      children: [
+        _sectionLabel('MÓDULOS'),
+        // Un módulo restringido no aparece: el perfil no lo ve, así que
+        // tampoco puede seleccionarlo.
+        for (final m in modulos.where((m) => profile.puedeUsar(m.modulo)))
+          _row(
+            context,
+            icon: m.icon,
+            title: m.title,
+            subtitle: m.subtitle,
+            color: m.color,
+            selected: current == m.modulo,
+            badge: m.badge,
+            onTap: () => _cerrarY(context, () => onSelectModule(m.modulo)),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'v1.0.0',
-                  style: NetworkTheme.mono(
-                    size: 11,
-                    color:
-                        isDark
-                            ? NetworkTheme.darkTextMuted
-                            : NetworkTheme.lightTextSecondary,
-                  ),
-                ),
-                Text(
-                  'Nettia',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color:
-                        isDark
-                            ? NetworkTheme.darkTextMuted
-                            : NetworkTheme.lightTextSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
+        const SizedBox(height: 12),
+        _sectionLabel('SISTEMA'),
+        ..._sistema(context, isDark),
+      ],
+    );
+  }
+
+  List<Widget> _sistema(BuildContext context, bool isDark) => [
+    _row(
+      context,
+      icon: NettiaIcons.ajustes,
+      title: 'Configuración & IA',
+      subtitle: 'Motores IA, apariencia y modelos',
+      color: NetworkTheme.amberAlert,
+      selected: false,
+      onTap: () => _cerrarY(context, onOpenSettings),
+    ),
+    _row(
+      context,
+      icon: NettiaIcons.acercaDe,
+      title: 'Acerca de Nettia',
+      subtitle: 'Versión 1.0.0',
+      color: _tenue(isDark),
+      selected: false,
+      onTap: () => _cerrarY(context, () => _showAbout(context)),
+    ),
+  ];
+
+  /// Cierra el menú y luego ejecuta [accion].
+  void _cerrarY(BuildContext context, VoidCallback accion) {
+    Navigator.of(context).pop();
+    accion();
+  }
+
+  static Color _tenue(bool isDark) =>
+      isDark ? NetworkTheme.darkTextMuted : NetworkTheme.lightTextSecondary;
+
+  Widget _pie(bool isDark) {
+    final color = _tenue(isDark);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text('v1.0.0', style: NetworkTheme.mono(size: 11, color: color)),
+          Text('Nettia', style: TextStyle(fontSize: 11, color: color)),
         ],
       ),
     );
@@ -342,9 +275,13 @@ class NetworkDrawer extends StatelessWidget {
                   style: TextStyle(fontSize: 13),
                 ),
                 SizedBox(height: 12),
-                Text('• Calculadoras: subredes, dividir, VLSM, IPv6, conversiones y práctica'),
+                Text(
+                  '• Calculadoras: subredes, dividir, VLSM, IPv6, conversiones y práctica',
+                ),
                 Text('• Plantillas Cisco IOS para VLANs y Router-on-a-stick'),
-                Text('• Asistente NETIA con base local con fuentes y multi-proveedor de IA'),
+                Text(
+                  '• Asistente NETIA con base local con fuentes y multi-proveedor de IA',
+                ),
                 Text('• Guía metodológica de 5 capas'),
                 SizedBox(height: 12),
                 Text(
