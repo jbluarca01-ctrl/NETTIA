@@ -243,13 +243,13 @@ void main() {
       expect(() => eui64DesdeMac('00:1A:2B'), throwsA(isA<Ipv6Exception>()));
     });
 
-    test('de /48 a /64 hay 65 536 subredes; se listan las primeras', () {
+    test('de /48 a /64 hay 65 536 subredes; se listan las primeras 24', () {
       final d = subnetearIpv6('2001:db8:acad::', 48, 64);
       expect(d.totalSubredes, BigInt.from(65536));
-      expect(d.primeras, hasLength(16));
+      expect(d.primeras, hasLength(24));
       expect(d.primeras[0].red.abreviada, '2001:db8:acad::');
       expect(d.primeras[1].red.abreviada, '2001:db8:acad:1::');
-      expect(d.primeras[15].red.abreviada, '2001:db8:acad:f::');
+      expect(d.primeras[23].red.abreviada, '2001:db8:acad:17::');
     });
 
     test('pocas subredes: se listan todas; y se normaliza la red', () {

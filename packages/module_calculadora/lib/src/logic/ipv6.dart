@@ -3,6 +3,8 @@
 /// (direccionamiento) y RFC 5952 (representación textual recomendada).
 library;
 
+import 'ipv4_subnetting.dart' show maxSubredesListadas;
+
 /// Error de validación con un mensaje listo para mostrar.
 class Ipv6Exception implements Exception {
   const Ipv6Exception(this.mensaje);
@@ -257,7 +259,7 @@ DivisionIpv6 subnetearIpv6(
   String direccion,
   int prefijo,
   int nuevoPrefijo, {
-  int maxMostrar = 16,
+  int maxMostrar = maxSubredesListadas,
 }) {
   if (prefijo < 1 || prefijo > 127) {
     throw const Ipv6Exception('El prefijo debe estar entre /1 y /127.');
