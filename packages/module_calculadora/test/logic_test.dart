@@ -39,6 +39,24 @@ void main() {
       expect(d.subredes[1].hostsUtiles, 8190);
     });
 
+    test(
+        'muchas subredes pedidas: lista las primeras $maxSubredesListadas y '
+        'da el total', () {
+      // 1000 subredes → 10 bits → 1024 desde /8.
+      final d = dividirEnSubredes('10.0.0.0', 8, 1000);
+      expect(d.totalSubredes, 1024);
+      expect(d.subredes, hasLength(maxSubredesListadas));
+      expect(d.subredesPedidas, 1000);
+      expect(
+          d.avisos,
+          contains('Se listan solo las primeras $maxSubredesListadas de '
+              '1024 subredes.'));
+    });
+
+    test('el total de subredes coincide con la lista cuando es pequeña', () {
+      expect(dividirEnSubredes('192.168.1.0', 24, 16).totalSubredes, 16);
+    });
+
     test('una IP que no es de red se normaliza y se avisa', () {
       final d = dividirEnSubredes('192.168.1.77', 24, 4);
       expect(d.redOriginal, '192.168.1.0');
@@ -68,6 +86,29 @@ void main() {
     test('exactamente 62 hosts cabe en /26; 63 ya necesita /25', () {
       expect(dividirPorHosts('10.0.0.0', 24, 62).nuevoCidr, 26);
       expect(dividirPorHosts('10.0.0.0', 24, 63).nuevoCidr, 25);
+    });
+
+    test(
+        'un prefijo grande no construye todas las subredes: lista las '
+        'primeras $maxSubredesListadas, da el total y avisa', () {
+      // 16 hosts → /27; desde /8 son 2^19 = 524288 subredes.
+      final d = dividirPorHosts('10.0.0.0', 8, 16);
+      expect(d.totalSubredes, 524288);
+      expect(d.subredes, hasLength(maxSubredesListadas));
+      expect(d.subredes.last.indice, maxSubredesListadas);
+      expect(d.subredes.last.red, '10.0.31.224');
+      expect(
+          d.avisos,
+          contains('Se listan solo las primeras $maxSubredesListadas de '
+              '524288 subredes.'));
+    });
+
+    test('hasta $maxSubredesListadas subredes se listan todas, sin aviso', () {
+      // 16 hosts → /27; desde /19 son 2^8 = 256.
+      final d = dividirPorHosts('10.0.0.0', 19, 16);
+      expect(d.totalSubredes, 256);
+      expect(d.subredes, hasLength(256));
+      expect(d.avisos, isEmpty);
     });
 
     test('más hosts de los que caben en la red original falla', () {

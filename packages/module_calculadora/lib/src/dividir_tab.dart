@@ -136,7 +136,7 @@ class _DividirTabState extends State<DividirTab>
                   FilaDato('Hosts útiles por subred:',
                       '${d.subredes.first.hostsUtiles}'),
                 ],
-                FilaDato('Subredes:', '${subredes.length}'),
+                FilaDato('Subredes:', '${d?.totalSubredes ?? subredes.length}'),
                 if (vlsm != null)
                   FilaDato('Direcciones libres al final:',
                       '${vlsm.direccionesLibres}'),

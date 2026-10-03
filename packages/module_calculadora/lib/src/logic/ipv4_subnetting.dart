@@ -38,6 +38,7 @@ class DivisionIpv4 {
     required this.nuevoCidr,
     required this.bitsPrestados,
     required this.subredes,
+    required this.totalSubredes,
     required this.subredesPedidas,
     required this.pasos,
     this.avisos = const <String>[],
@@ -48,13 +49,21 @@ class DivisionIpv4 {
   final int nuevoCidr;
   final int bitsPrestados;
 
-  /// Todas las subredes que resultan del nuevo prefijo (puede haber más de
-  /// las pedidas: siempre es una potencia de 2).
+  /// Las primeras subredes del nuevo prefijo, como mucho
+  /// [maxSubredesListadas] (construirlas todas congela la app: con un /1
+  /// pueden ser más de 67 millones).
   final List<SubredIpv4> subredes;
+
+  /// Cuántas subredes resultan del nuevo prefijo en total (puede haber más
+  /// de las pedidas: siempre es una potencia de 2).
+  final int totalSubredes;
   final int subredesPedidas;
   final List<String> pasos;
   final List<String> avisos;
 }
+
+/// Máximo de subredes que se construyen y se listan en una división.
+const int maxSubredesListadas = 256;
 
 /// Error de validación con un mensaje listo para mostrar al usuario.
 class SubneteoException implements Exception {
@@ -105,6 +114,20 @@ String _ipTexto(int v) =>
     '${v ~/ 16777216 % 256}.${v ~/ 65536 % 256}.${v ~/ 256 % 256}.${v % 256}';
 
 String _mascaraTexto(int cidr) => _ipTexto(4294967296 - _pow2(32 - cidr));
+
+/// Las primeras [total] subredes /[cidr] de [tam] direcciones desde [red],
+/// sin pasar de [maxSubredesListadas].
+List<SubredIpv4> _listarSubredes(int red, int total, int tam, int cidr) =>
+    <SubredIpv4>[
+      for (var i = 0; i < total && i < maxSubredesListadas; i++)
+        _subred(i + 1, red + i * tam, cidr),
+    ];
+
+/// Aviso de que la lista se cortó, si [total] pasa de [maxSubredesListadas].
+List<String> _avisoListado(int total) => <String>[
+      if (total > maxSubredesListadas)
+        'Se listan solo las primeras $maxSubredesListadas de $total subredes.',
+    ];
 
 SubredIpv4 _subred(int indice, int red, int cidr, {String? nombre}) {
   final tam = _pow2(32 - cidr);
@@ -159,20 +182,20 @@ DivisionIpv4 dividirEnSubredes(String ip, int cidr, int cantidad) {
   }
   final total = _pow2(bits);
   final tam = _pow2(32 - nuevo);
-  final subredes = <SubredIpv4>[
-    for (var i = 0; i < total; i++) _subred(i + 1, red + i * tam, nuevo),
-  ];
+  final subredes = _listarSubredes(red, total, tam, nuevo);
   final extra = <String>[...avisos];
   if (total != cantidad) {
     extra.add('Pediste $cantidad subredes; con $bits bits salen $total. '
         'Usa las primeras $cantidad y deja ${total - cantidad} libres.');
   }
+  extra.addAll(_avisoListado(total));
   return DivisionIpv4(
     redOriginal: _ipTexto(red),
     cidrOriginal: cidr,
     nuevoCidr: nuevo,
     bitsPrestados: bits,
     subredes: subredes,
+    totalSubredes: total,
     subredesPedidas: cantidad,
     avisos: extra,
     pasos: <String>[
@@ -214,11 +237,10 @@ DivisionIpv4 dividirPorHosts(String ip, int cidr, int hostsPorSubred) {
     cidrOriginal: cidr,
     nuevoCidr: nuevo,
     bitsPrestados: bits,
-    subredes: <SubredIpv4>[
-      for (var i = 0; i < total; i++) _subred(i + 1, red + i * tam, nuevo),
-    ],
+    subredes: _listarSubredes(red, total, tam, nuevo),
+    totalSubredes: total,
     subredesPedidas: total,
-    avisos: avisos,
+    avisos: <String>[...avisos, ..._avisoListado(total)],
     pasos: <String>[
       '1. Bits de host: el menor h con 2^h − 2 ≥ $hostsPorSubred → h = '
           '$bitsHost (2^$bitsHost − 2 = ${tam - 2} hosts útiles).',
