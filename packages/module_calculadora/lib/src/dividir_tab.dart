@@ -76,9 +76,7 @@ class _DividirTabState extends State<DividirTab>
   Widget build(BuildContext context) {
     super.build(context);
     final r = _calcular();
-    final d = r.division;
-    final vlsm = r.vlsm;
-    final subredes = d?.subredes ?? vlsm?.subredes;
+    final subredes = r.division?.subredes ?? r.vlsm?.subredes;
     return SafeArea(
       child: ListView(
         padding: const EdgeInsets.all(16),
@@ -87,65 +85,12 @@ class _DividirTabState extends State<DividirTab>
             titulo: 'Dividir una red en subredes',
             icono: NettiaIcons.calculadora,
             hijos: <Widget>[
-              RedYPrefijoRow(
-                ip: _ip,
-                etiquetaIp: 'Red (IPv4)',
-                cidr: _cidr,
-                onIpChanged: () => setState(() {}),
-                onCidrChanged: (v) => setState(() => _cidr = v),
-              ),
-              const SizedBox(height: 10),
-              SegmentedButton<_ModoDividir>(
-                segments: const <ButtonSegment<_ModoDividir>>[
-                  ButtonSegment<_ModoDividir>(
-                      value: _ModoDividir.cantidad,
-                      label: Text('Nº de subredes')),
-                  ButtonSegment<_ModoDividir>(
-                      value: _ModoDividir.hostsIguales,
-                      label: Text('Hosts por subred')),
-                  ButtonSegment<_ModoDividir>(
-                      value: _ModoDividir.tamanosPersonalizados,
-                      label: Text('Tamaños personalizados')),
-                ],
-                selected: <_ModoDividir>{_modo},
-                showSelectedIcon: false,
-                onSelectionChanged: (s) => setState(() => _modo = s.first),
-              ),
-              const SizedBox(height: 10),
-              if (_modo == _ModoDividir.tamanosPersonalizados)
-                construirListaFilasVlsm()
-              else
-                CampoNumeroDenso(
-                  controller: _cantidad,
-                  labelText: _modo == _ModoDividir.hostsIguales
-                      ? 'Hosts útiles que necesita cada subred'
-                      : 'Cantidad de subredes',
-                  onChanged: (_) => setState(() {}),
-                ),
+              ..._entradas(),
               const SizedBox(height: 12),
               if (subredes == null)
                 MensajeError(r.error!)
-              else ...<Widget>[
-                const Divider(),
-                if (d != null) ...<Widget>[
-                  FilaDato(
-                      'Red original:', '${d.redOriginal}/${d.cidrOriginal}'),
-                  FilaDato('Nuevo prefijo:',
-                      '/${d.nuevoCidr} (${d.subredes.first.mascara})'),
-                  FilaDato('Bits prestados:', '${d.bitsPrestados}'),
-                  FilaDato('Hosts útiles por subred:',
-                      '${d.subredes.first.hostsUtiles}'),
-                ],
-                FilaDato('Subredes:', '${d?.totalSubredes ?? subredes.length}'),
-                if (vlsm != null)
-                  FilaDato('Direcciones libres al final:',
-                      '${vlsm.direccionesLibres}'),
-                const SizedBox(height: 6),
-                PasosYAvisos(
-                  pasos: d?.pasos ?? vlsm?.pasos ?? const <String>[],
-                  avisos: d?.avisos ?? vlsm?.avisos ?? const <String>[],
-                ),
-              ],
+              else
+                ..._resumen(r.division, r.vlsm, subredes),
             ],
           ),
           if (subredes != null) ...<Widget>[
@@ -156,7 +101,7 @@ class _DividirTabState extends State<DividirTab>
               hijos: <Widget>[
                 TablaSubredesIpv4(
                   subredes: subredes,
-                  primerasUsadas: d?.subredesPedidas,
+                  primerasUsadas: r.division?.subredesPedidas,
                 ),
               ],
             ),
@@ -165,4 +110,75 @@ class _DividirTabState extends State<DividirTab>
       ),
     );
   }
+
+  /// Red, prefijo, modo y el campo (o las filas) según el modo.
+  List<Widget> _entradas() => <Widget>[
+    RedYPrefijoRow(
+      ip: _ip,
+      etiquetaIp: 'Red (IPv4)',
+      cidr: _cidr,
+      onIpChanged: () => setState(() {}),
+      onCidrChanged: (v) => setState(() => _cidr = v),
+    ),
+    const SizedBox(height: 10),
+    _selectorModo(),
+    const SizedBox(height: 10),
+    if (_modo == _ModoDividir.tamanosPersonalizados)
+      construirListaFilasVlsm()
+    else
+      CampoNumeroDenso(
+        controller: _cantidad,
+        labelText:
+            _modo == _ModoDividir.hostsIguales
+                ? 'Hosts útiles que necesita cada subred'
+                : 'Cantidad de subredes',
+        onChanged: (_) => setState(() {}),
+      ),
+  ];
+
+  Widget _selectorModo() => SegmentedButton<_ModoDividir>(
+    segments: const <ButtonSegment<_ModoDividir>>[
+      ButtonSegment<_ModoDividir>(
+        value: _ModoDividir.cantidad,
+        label: Text('Nº de subredes'),
+      ),
+      ButtonSegment<_ModoDividir>(
+        value: _ModoDividir.hostsIguales,
+        label: Text('Hosts por subred'),
+      ),
+      ButtonSegment<_ModoDividir>(
+        value: _ModoDividir.tamanosPersonalizados,
+        label: Text('Tamaños personalizados'),
+      ),
+    ],
+    selected: <_ModoDividir>{_modo},
+    showSelectedIcon: false,
+    onSelectionChanged: (s) => setState(() => _modo = s.first),
+  );
+
+  /// Datos del resultado: [d] en los modos iguales, [vlsm] en tamaños
+  /// personalizados (uno de los dos no es nulo).
+  List<Widget> _resumen(
+    DivisionIpv4? d,
+    ResultadoVlsm? vlsm,
+    List<SubredIpv4> subredes,
+  ) => <Widget>[
+    const Divider(),
+    if (d != null) ..._filasDivision(d),
+    FilaDato('Subredes:', '${d?.totalSubredes ?? subredes.length}'),
+    if (vlsm != null)
+      FilaDato('Direcciones libres al final:', '${vlsm.direccionesLibres}'),
+    const SizedBox(height: 6),
+    PasosYAvisos(
+      pasos: d?.pasos ?? vlsm!.pasos,
+      avisos: d?.avisos ?? vlsm!.avisos,
+    ),
+  ];
+
+  List<Widget> _filasDivision(DivisionIpv4 d) => <Widget>[
+    FilaDato('Red original:', '${d.redOriginal}/${d.cidrOriginal}'),
+    FilaDato('Nuevo prefijo:', '/${d.nuevoCidr} (${d.subredes.first.mascara})'),
+    FilaDato('Bits prestados:', '${d.bitsPrestados}'),
+    FilaDato('Hosts útiles por subred:', '${d.subredes.first.hostsUtiles}'),
+  ];
 }

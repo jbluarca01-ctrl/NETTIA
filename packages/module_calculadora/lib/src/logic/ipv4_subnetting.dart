@@ -190,22 +190,21 @@ DivisionIpv4 dividirEnSubredes(String ip, int cidr, int cantidad) {
   }
   final total = _pow2(bits);
   final tam = _pow2(32 - nuevo);
-  final subredes = _listarSubredes(red, total, tam, nuevo);
-  final extra = <String>[...avisos];
-  if (total != cantidad) {
-    extra.add('Pediste $cantidad subredes; con $bits bits salen $total. '
-        'Usa las primeras $cantidad y deja ${total - cantidad} libres.');
-  }
-  extra.addAll(_avisoListado(total));
   return DivisionIpv4(
     redOriginal: _ipTexto(red),
     cidrOriginal: cidr,
     nuevoCidr: nuevo,
     bitsPrestados: bits,
-    subredes: subredes,
+    subredes: _listarSubredes(red, total, tam, nuevo),
     totalSubredes: total,
     subredesPedidas: cantidad,
-    avisos: extra,
+    avisos: <String>[
+      ...avisos,
+      if (total != cantidad)
+        'Pediste $cantidad subredes; con $bits bits salen $total. '
+            'Usa las primeras $cantidad y deja ${total - cantidad} libres.',
+      ..._avisoListado(total),
+    ],
     pasos: <String>[
       '1. Bits a pedir prestados: el menor n con 2^n ≥ $cantidad → n = $bits '
           '(2^$bits = $total subredes).',
