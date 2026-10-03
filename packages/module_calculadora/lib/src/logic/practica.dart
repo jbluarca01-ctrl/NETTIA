@@ -108,7 +108,7 @@ Ejercicio _dividir(Random rnd) {
   final cantidad = _elige(rnd, <int>[2, 4, 5, 6, 8, 10, 12, 16, 20, 32]);
   final d = dividirEnSubredes(red, pre, cantidad);
   final k = 2 + rnd.nextInt(cantidad - 1); // 2..cantidad
-  final s = d.subredes[k - 1];
+  final s = subredNumero(d, k);
   return Ejercicio(
     tipo: TipoEjercicio.dividirSubredes,
     enunciado: 'Divide la red $red/$pre en $cantidad subredes del mismo tamaño.',

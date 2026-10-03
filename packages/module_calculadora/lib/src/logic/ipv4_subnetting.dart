@@ -63,7 +63,7 @@ class DivisionIpv4 {
 }
 
 /// Máximo de subredes que se construyen y se listan en una división.
-const int maxSubredesListadas = 256;
+const int maxSubredesListadas = 24;
 
 /// Error de validación con un mensaje listo para mostrar al usuario.
 class SubneteoException implements Exception {
@@ -128,6 +128,14 @@ List<String> _avisoListado(int total) => <String>[
       if (total > maxSubredesListadas)
         'Se listan solo las primeras $maxSubredesListadas de $total subredes.',
     ];
+
+/// La subred número [k] (desde 1) de [d], aunque no esté entre las
+/// [maxSubredesListadas] que trae la lista.
+SubredIpv4 subredNumero(DivisionIpv4 d, int k) => _subred(
+      k,
+      _parseIp(d.redOriginal)! + (k - 1) * _pow2(32 - d.nuevoCidr),
+      d.nuevoCidr,
+    );
 
 SubredIpv4 _subred(int indice, int red, int cidr, {String? nombre}) {
   final tam = _pow2(32 - cidr);

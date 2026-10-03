@@ -39,18 +39,28 @@ void main() {
       expect(d.subredes[1].hostsUtiles, 8190);
     });
 
-    test(
-        'muchas subredes pedidas: lista las primeras $maxSubredesListadas y '
-        'da el total', () {
+    test('muchas subredes pedidas: lista solo las primeras 24 y da el total',
+        () {
       // 1000 subredes → 10 bits → 1024 desde /8.
       final d = dividirEnSubredes('10.0.0.0', 8, 1000);
+      expect(maxSubredesListadas, 24);
       expect(d.totalSubredes, 1024);
-      expect(d.subredes, hasLength(maxSubredesListadas));
+      expect(d.subredes, hasLength(24));
       expect(d.subredesPedidas, 1000);
-      expect(
-          d.avisos,
-          contains('Se listan solo las primeras $maxSubredesListadas de '
-              '1024 subredes.'));
+      expect(d.avisos,
+          contains('Se listan solo las primeras 24 de 1024 subredes.'));
+    });
+
+    test('la subred número k se calcula aunque no esté listada', () {
+      // 32 subredes /29 desde 192.168.1.0/24: la #25 empieza en 24 × 8.
+      final d = dividirEnSubredes('192.168.1.0', 24, 32);
+      expect(d.subredes, hasLength(24));
+      final s = subredNumero(d, 25);
+      expect(s.indice, 25);
+      expect(s.red, '192.168.1.192');
+      expect(s.broadcast, '192.168.1.199');
+      expect(s.mascara, '255.255.255.248');
+      expect(subredNumero(d, 1).red, d.subredes.first.red);
     });
 
     test('el total de subredes coincide con la lista cuando es pequeña', () {
@@ -90,25 +100,32 @@ void main() {
 
     test(
         'un prefijo grande no construye todas las subredes: lista las '
-        'primeras $maxSubredesListadas, da el total y avisa', () {
+        'primeras 24, da el total y avisa', () {
       // 16 hosts → /27; desde /8 son 2^19 = 524288 subredes.
       final d = dividirPorHosts('10.0.0.0', 8, 16);
       expect(d.totalSubredes, 524288);
-      expect(d.subredes, hasLength(maxSubredesListadas));
-      expect(d.subredes.last.indice, maxSubredesListadas);
-      expect(d.subredes.last.red, '10.0.31.224');
-      expect(
-          d.avisos,
-          contains('Se listan solo las primeras $maxSubredesListadas de '
-              '524288 subredes.'));
+      expect(d.subredes, hasLength(24));
+      expect(d.subredes.last.indice, 24);
+      expect(d.subredes.last.red, '10.0.2.224');
+      expect(d.avisos,
+          contains('Se listan solo las primeras 24 de 524288 subredes.'));
     });
 
-    test('hasta $maxSubredesListadas subredes se listan todas, sin aviso', () {
-      // 16 hosts → /27; desde /19 son 2^8 = 256.
-      final d = dividirPorHosts('10.0.0.0', 19, 16);
-      expect(d.totalSubredes, 256);
-      expect(d.subredes, hasLength(256));
+    test('hasta 24 subredes se listan todas, sin aviso', () {
+      // 16 hosts → /27; desde /23 son 2^4 = 16.
+      final d = dividirPorHosts('10.0.0.0', 23, 16);
+      expect(d.totalSubredes, 16);
+      expect(d.subredes, hasLength(16));
       expect(d.avisos, isEmpty);
+    });
+
+    test('32 subredes ya pasan del máximo: se listan 24 y se avisa', () {
+      // 16 hosts → /27; desde /22 son 2^5 = 32.
+      final d = dividirPorHosts('10.0.0.0', 22, 16);
+      expect(d.totalSubredes, 32);
+      expect(d.subredes, hasLength(24));
+      expect(
+          d.avisos, contains('Se listan solo las primeras 24 de 32 subredes.'));
     });
 
     test('más hosts de los que caben en la red original falla', () {
