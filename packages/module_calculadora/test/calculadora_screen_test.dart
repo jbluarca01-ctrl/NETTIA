@@ -127,6 +127,22 @@ void main() {
   });
 
   testWidgets(
+      'Dividir: "Tamaños personalizados" resume cuántas subredes y cuántas '
+      'direcciones quedan libres', (tester) async {
+    await _abrir(tester);
+    await _pestana(tester, 'Dividir');
+    await tester.tap(_t('Tamaños personalizados'));
+    await tester.pump();
+
+    // Filas de ejemplo 100, 50 y 25 hosts: /25 + /26 + /27 = 224 de 256.
+    Finder valor(String etiqueta, String v) => find.descendant(
+        of: find.ancestor(of: _t(etiqueta), matching: find.byType(Row)).first,
+        matching: _t(v));
+    expect(valor('Subredes:', '3'), findsOneWidget);
+    expect(valor('Direcciones libres al final:', '32'), findsOneWidget);
+  });
+
+  testWidgets(
       'Dividir: en "Tamaños personalizados" se pueden agregar y quitar filas '
       'sin romper el cálculo', (tester) async {
     await _abrir(tester);
