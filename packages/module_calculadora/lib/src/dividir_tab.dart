@@ -90,7 +90,7 @@ class _DividirTabState extends State<DividirTab>
               if (subredes == null)
                 MensajeError(r.error!)
               else
-                ..._resumen(r.division, r.vlsm, subredes),
+                ..._resumen(r.division, r.vlsm),
             ],
           ),
           if (subredes != null) ...<Widget>[
@@ -158,22 +158,24 @@ class _DividirTabState extends State<DividirTab>
 
   /// Datos del resultado: [d] en los modos iguales, [vlsm] en tamaños
   /// personalizados (uno de los dos no es nulo).
-  List<Widget> _resumen(
-    DivisionIpv4? d,
-    ResultadoVlsm? vlsm,
-    List<SubredIpv4> subredes,
-  ) => <Widget>[
-    const Divider(),
-    if (d != null) ..._filasDivision(d),
-    FilaDato('Subredes:', '${d?.totalSubredes ?? subredes.length}'),
-    if (vlsm != null)
-      FilaDato('Direcciones libres al final:', '${vlsm.direccionesLibres}'),
-    const SizedBox(height: 6),
-    PasosYAvisos(
-      pasos: d?.pasos ?? vlsm!.pasos,
-      avisos: d?.avisos ?? vlsm!.avisos,
-    ),
-  ];
+  List<Widget> _resumen(DivisionIpv4? d, ResultadoVlsm? vlsm) =>
+      d != null ? _resumenDivision(d) : _resumenVlsm(vlsm!);
+
+  List<Widget> _resumenDivision(DivisionIpv4 d) => <Widget>[
+        const Divider(),
+        ..._filasDivision(d),
+        FilaDato('Subredes:', '${d.totalSubredes}'),
+        const SizedBox(height: 6),
+        PasosYAvisos(pasos: d.pasos, avisos: d.avisos),
+      ];
+
+  List<Widget> _resumenVlsm(ResultadoVlsm vlsm) => <Widget>[
+        const Divider(),
+        FilaDato('Subredes:', '${vlsm.subredes.length}'),
+        FilaDato('Direcciones libres al final:', '${vlsm.direccionesLibres}'),
+        const SizedBox(height: 6),
+        PasosYAvisos(pasos: vlsm.pasos, avisos: vlsm.avisos),
+      ];
 
   List<Widget> _filasDivision(DivisionIpv4 d) => <Widget>[
     FilaDato('Red original:', '${d.redOriginal}/${d.cidrOriginal}'),

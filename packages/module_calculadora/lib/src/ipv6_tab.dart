@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:nettia_core/nettia_core.dart';
 
+import 'logic/ipv4_subnetting.dart' show maxSubredesListadas;
 import 'logic/ipv6.dart';
 import 'widgets/resultado_widgets.dart';
 
@@ -104,7 +105,8 @@ class _Ipv6TabState extends State<Ipv6Tab> with AutomaticKeepAliveClientMixin {
 
   Widget _subneteo() {
     try {
-      final d = subnetearIpv6(_redSub.text, _prefOrig, _prefNuevo);
+      final d = subnetearIpv6(_redSub.text, _prefOrig, _prefNuevo,
+          maxMostrar: maxSubredesListadas);
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[

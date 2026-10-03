@@ -63,6 +63,14 @@ void main() {
       expect(subredNumero(d, 1).red, d.subredes.first.red);
     });
 
+    test('si la cantidad no es potencia de 2 avisa cuántas sobran', () {
+      expect(dividirEnSubredes('192.168.1.0', 24, 5).avisos, <String>[
+        'Pediste 5 subredes; con 3 bits salen 8. '
+            'Usa las primeras 5 y deja 3 libres.',
+      ]);
+      expect(dividirEnSubredes('192.168.1.0', 24, 8).avisos, isEmpty);
+    });
+
     test('el total de subredes coincide con la lista cuando es pequeña', () {
       expect(dividirEnSubredes('192.168.1.0', 24, 16).totalSubredes, 16);
     });
@@ -243,13 +251,13 @@ void main() {
       expect(() => eui64DesdeMac('00:1A:2B'), throwsA(isA<Ipv6Exception>()));
     });
 
-    test('de /48 a /64 hay 65 536 subredes; se listan las primeras 24', () {
+    test('de /48 a /64 hay 65 536 subredes; se listan las primeras', () {
       final d = subnetearIpv6('2001:db8:acad::', 48, 64);
       expect(d.totalSubredes, BigInt.from(65536));
-      expect(d.primeras, hasLength(24));
+      expect(d.primeras, hasLength(16));
       expect(d.primeras[0].red.abreviada, '2001:db8:acad::');
       expect(d.primeras[1].red.abreviada, '2001:db8:acad:1::');
-      expect(d.primeras[23].red.abreviada, '2001:db8:acad:17::');
+      expect(d.primeras[15].red.abreviada, '2001:db8:acad:f::');
     });
 
     test('pocas subredes: se listan todas; y se normaliza la red', () {

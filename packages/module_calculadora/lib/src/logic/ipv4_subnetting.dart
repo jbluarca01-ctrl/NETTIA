@@ -123,6 +123,13 @@ List<SubredIpv4> _listarSubredes(int red, int total, int tam, int cidr) =>
         _subred(i + 1, red + i * tam, cidr),
     ];
 
+/// Aviso de las subredes que sobran cuando [cantidad] no es potencia de 2.
+List<String> _avisoSobrantes(int cantidad, int bits, int total) => <String>[
+      if (total != cantidad)
+        'Pediste $cantidad subredes; con $bits bits salen $total. '
+            'Usa las primeras $cantidad y deja ${total - cantidad} libres.',
+    ];
+
 /// Aviso de que la lista se cortó, si [total] pasa de [maxSubredesListadas].
 List<String> _avisoListado(int total) => <String>[
       if (total > maxSubredesListadas)
@@ -200,9 +207,7 @@ DivisionIpv4 dividirEnSubredes(String ip, int cidr, int cantidad) {
     subredesPedidas: cantidad,
     avisos: <String>[
       ...avisos,
-      if (total != cantidad)
-        'Pediste $cantidad subredes; con $bits bits salen $total. '
-            'Usa las primeras $cantidad y deja ${total - cantidad} libres.',
+      ..._avisoSobrantes(cantidad, bits, total),
       ..._avisoListado(total),
     ],
     pasos: <String>[
