@@ -63,7 +63,9 @@ class _ExplicarSalidaTabState extends State<ExplicarSalidaTab>
           ),
           const SizedBox(height: 2),
           Text(
-            'Reconoce: show ip interface brief · show vlan brief · show ip ospf neighbor. '
+            'Reconoce: show ip interface brief · show vlan brief · show ip ospf neighbor · '
+            'show ip route · show interfaces trunk · show ip dhcp binding · '
+            'ipconfig y arp -a de una PC. '
             'No se envía a ningún lado: se analiza en tu teléfono.',
             style: TextStyle(
               fontSize: 12,

@@ -7,66 +7,51 @@
 /// Neighbors Stuck in Exstart/Exchange State" (Cisco doc 13684-12).
 library;
 
-/// Gravedad de un hallazgo.
-enum Nivel { ok, aviso, problema }
+import 'explicador_pc.dart';
+import 'explicador_router.dart';
+import 'modelo_show.dart';
 
-class Hallazgo {
-  const Hallazgo(this.nivel, this.titulo, this.detalle);
+export 'modelo_show.dart';
 
-  final Nivel nivel;
-
-  /// Qué se ve (p. ej. "GigabitEthernet0/1: administratively down / down").
-  final String titulo;
-
-  /// Qué significa y qué revisar.
-  final String detalle;
-}
-
-/// Comandos reconocidos.
-enum TipoShow {
-  ipInterfaceBrief('show ip interface brief'),
-  vlanBrief('show vlan brief'),
-  ospfNeighbor('show ip ospf neighbor');
-
-  const TipoShow(this.comando);
-  final String comando;
-}
-
-class ExplicacionShow {
-  const ExplicacionShow(this.tipo, this.resumen, this.hallazgos);
-
-  final TipoShow tipo;
-  final String resumen;
-  final List<Hallazgo> hallazgos;
-}
+/// Palabras que deben aparecer todas para reconocer cada comando (en orden:
+/// gana la primera firma que calce).
+const _firmas = <(TipoShow, List<String>)>[
+  (TipoShow.ipInterfaceBrief, ['interface', 'ip-address', 'protocol']),
+  (TipoShow.vlanBrief, ['vlan name', 'status', 'ports']),
+  (TipoShow.ospfNeighbor, ['neighbor id', 'state', 'dead time']),
+  (TipoShow.ipRoute, ['gateway of last resort']),
+  (TipoShow.ipRoute, ['is directly connected']),
+  (TipoShow.interfacesTrunk, ['port', 'encapsulation', 'native vlan']),
+  (TipoShow.dhcpBinding, ['lease expiration']),
+  (TipoShow.ipconfig, ['subnet mask']),
+  (TipoShow.arp, ['physical address']),
+  (TipoShow.arp, ['no arp entries']),
+];
 
 /// Adivina de qué comando es la salida, o null si no la reconoce.
 TipoShow? detectarTipoShow(String texto) {
   final t = texto.toLowerCase();
-  if (t.contains('interface') && t.contains('ip-address') && t.contains('protocol')) {
-    return TipoShow.ipInterfaceBrief;
-  }
-  if (t.contains('vlan name') && t.contains('status') && t.contains('ports')) {
-    return TipoShow.vlanBrief;
-  }
-  if (t.contains('neighbor id') && t.contains('state') && t.contains('dead time')) {
-    return TipoShow.ospfNeighbor;
+  for (final (tipo, claves) in _firmas) {
+    if (claves.every(t.contains)) return tipo;
   }
   return null;
 }
 
+const _explicadores = <TipoShow, ExplicacionShow Function(String)>{
+  TipoShow.ipInterfaceBrief: _ipBrief,
+  TipoShow.vlanBrief: _vlanBrief,
+  TipoShow.ospfNeighbor: _ospf,
+  TipoShow.ipRoute: explicarRuta,
+  TipoShow.interfacesTrunk: explicarTrunk,
+  TipoShow.dhcpBinding: explicarDhcpBinding,
+  TipoShow.ipconfig: explicarIpconfig,
+  TipoShow.arp: explicarArp,
+};
+
 /// Explica [texto]. Devuelve null si no reconoce el comando.
 ExplicacionShow? explicarSalidaShow(String texto) {
-  switch (detectarTipoShow(texto)) {
-    case TipoShow.ipInterfaceBrief:
-      return _ipBrief(texto);
-    case TipoShow.vlanBrief:
-      return _vlanBrief(texto);
-    case TipoShow.ospfNeighbor:
-      return _ospf(texto);
-    case null:
-      return null;
-  }
+  final tipo = detectarTipoShow(texto);
+  return tipo == null ? null : _explicadores[tipo]!(texto);
 }
 
 // ---------------------------------------------------------------- ip brief
@@ -131,7 +116,7 @@ ExplicacionShow _ipBrief(String texto) {
     total == 0
         ? 'No se encontraron interfaces en el texto pegado.'
         : '$total interfaces: $arriba en up/up, ${total - arriba} con algo que revisar.',
-    _ordenar(h),
+    ordenarHallazgos(h),
   );
 }
 
@@ -188,7 +173,7 @@ ExplicacionShow _vlanBrief(String texto) {
     vlans.isEmpty
         ? 'No se encontraron VLAN en el texto pegado.'
         : '${vlans.length} VLAN en la lista ($propias creadas por ti, el resto son las predeterminadas).',
-    _ordenar(h),
+    ordenarHallazgos(h),
   );
 }
 
@@ -248,23 +233,6 @@ ExplicacionShow _ospf(String texto) {
     vecinos == 0
         ? 'No se encontraron vecinos en el texto pegado.'
         : '$vecinos vecinos: $full en FULL, ${vecinos - full} por revisar.',
-    _ordenar(h),
+    ordenarHallazgos(h),
   );
-}
-
-/// Problemas primero, luego avisos y al final lo que está bien.
-List<Hallazgo> _ordenar(List<Hallazgo> h) {
-  int peso(Nivel n) => switch (n) {
-        Nivel.problema => 0,
-        Nivel.aviso => 1,
-        Nivel.ok => 2,
-      };
-  final copia = List<Hallazgo>.of(h);
-  // sort de Dart no es estable: se desempata por posición original.
-  final orden = <Hallazgo, int>{for (var i = 0; i < copia.length; i++) copia[i]: i};
-  copia.sort((a, b) {
-    final c = peso(a.nivel).compareTo(peso(b.nivel));
-    return c != 0 ? c : orden[a]!.compareTo(orden[b]!);
-  });
-  return copia;
 }
