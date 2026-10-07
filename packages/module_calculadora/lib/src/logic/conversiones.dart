@@ -68,8 +68,8 @@ class ConversionMascara {
   final String mascara;
   final String wildcard;
 
-  /// Hosts útiles (dirección de red y broadcast descontadas; 0 para /31 y /32
-  /// en el cálculo clásico).
+  /// Hosts útiles: dirección de red y broadcast descontadas; en /31 (enlace
+  /// punto a punto, RFC 3021) se usan las 2; /32 no tiene hosts.
   final int hosts;
 }
 
@@ -98,7 +98,7 @@ ConversionMascara convertirMascara(String entrada) {
     prefijo,
     mascaraDePrefijo(prefijo),
     wildcardDePrefijo(prefijo),
-    tam >= 4 ? tam - 2 : 0,
+    tam >= 4 ? tam - 2 : (tam == 2 ? 2 : 0),
   );
 }
 

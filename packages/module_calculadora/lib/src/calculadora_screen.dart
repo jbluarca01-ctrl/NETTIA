@@ -8,6 +8,8 @@ import 'ipv6_tab.dart';
 import 'practica_tab.dart';
 import 'vlsm_tab.dart';
 import 'widgets/clasificacion_vista.dart';
+import 'widgets/misma_red_vista.dart';
+import 'widgets/octeto_vista.dart';
 
 class _SubnetResult {
   final String mask;
@@ -29,6 +31,9 @@ class _SubnetResult {
     required this.defaultGateway,
     required this.totalHosts,
   });
+
+  /// /31: enlace punto a punto, sin gateway ni broadcast útiles (RFC 3021).
+  bool get puntoAPunto => cidr == 31;
 }
 
 /// Desglose binario octeto a octeto de una IP/máscara, para mostrar el
@@ -71,13 +76,13 @@ int? _decimalIpToInt(String ipStr) {
   return value;
 }
 
-/// Encuentra el CIDR (1-30) cuya máscara decimal equivalente coincide con
+/// Encuentra el CIDR (1-31) cuya máscara decimal equivalente coincide con
 /// `decimalMask`, o null si la máscara no es válida/contigua o está fuera
 /// de ese rango.
 int? _cidrFromDecimalMask(String decimalMask) {
   final maskInt = _decimalIpToInt(decimalMask);
   if (maskInt == null) return null;
-  for (var cidr = 1; cidr <= 30; cidr++) {
+  for (var cidr = 1; cidr <= 31; cidr++) {
     var blockSize = 1;
     for (var i = 0; i < 32 - cidr; i++) {
       blockSize *= 2;
@@ -111,6 +116,9 @@ String _bitwiseOr(String a, String b) => _bitwiseOp(a, b, (x, y) => x | y);
 String _bitwiseNot(String bits) =>
     bits.split('').map((c) => c == '.' ? '.' : (c == '0' ? '1' : '0')).join();
 
+const String _sinBroadcast = 'No tiene (punto a punto)';
+const String _sinGateway = 'No aplica (punto a punto)';
+
 class _NetworkCalculator {
   // Red = IP AND Máscara. Broadcast = Red OR (NOT Máscara).
   // Esto se resuelve bit a bit sobre las cadenas binarias (`_bitwiseOp`) en
@@ -118,9 +126,8 @@ class _NetworkCalculator {
   // truncan a 32 bits CON signo al compilar a JS (Flutter Web) y romperían
   // toda IP con el primer octeto >= 128. Trabajando bit a bit sobre texto
   // el resultado es idéntico y correcto en cualquier plataforma.
+  // [cidr] siempre llega en 1..31: del selector o de una máscara ya validada.
   static _SubnetResult? calculate(String ipStr, int cidr) {
-    if (cidr < 1 || cidr > 30) return null;
-
     final parts = ipStr.trim().split('.');
     if (parts.length != 4) return null;
 
@@ -154,17 +161,18 @@ class _NetworkCalculator {
     for (var i = 0; i < 32 - cidr; i++) {
       blockSize *= 2;
     }
-    final totalHosts = blockSize - 2;
+    // /31 (punto a punto): las 2 direcciones son de host, una por extremo.
+    final p2p = cidr == 31;
 
     return _SubnetResult(
       mask: maskDecimal,
       cidr: cidr,
       networkAddress: networkDecimal,
-      broadcastAddress: broadcastDecimal,
-      firstHost: _intToIp(firstHostInt),
-      lastHost: _intToIp(lastHostInt),
-      defaultGateway: _intToIp(firstHostInt),
-      totalHosts: totalHosts,
+      broadcastAddress: p2p ? _sinBroadcast : broadcastDecimal,
+      firstHost: _intToIp(p2p ? netInt : firstHostInt),
+      lastHost: _intToIp(p2p ? bcastInt : lastHostInt),
+      defaultGateway: p2p ? _sinGateway : _intToIp(firstHostInt),
+      totalHosts: p2p ? 2 : blockSize - 2,
     );
   }
 
@@ -437,7 +445,7 @@ class _CalculadoraScreenState extends State<_RedTab>
                   border: OutlineInputBorder(),
                   isDense: true,
                 ),
-                items: List<int>.generate(30, (int i) => i + 1)
+                items: List<int>.generate(31, (int i) => i + 1)
                     .map((int cidr) => DropdownMenuItem<int>(
                           value: cidr,
                           child: Text('/$cidr'),
@@ -481,8 +489,14 @@ class _CalculadoraScreenState extends State<_RedTab>
               _infoRow('Primer Host:', result.firstHost),
               _infoRow('Último Host:', result.lastHost),
               _infoRow('Broadcast:', result.broadcastAddress),
-              _infoRow('Capacidad:', '${result.totalHosts} hosts útiles'),
+              _infoRow(
+                'Capacidad:',
+                '${result.totalHosts} hosts útiles'
+                    '${result.puntoAPunto ? ' (enlace punto a punto)' : ''}',
+              ),
+              OctetoVista(_resolvedIp!, result.cidr),
               ClasificacionVista(_resolvedIp!),
+              MismaRedVista(_resolvedIp!, result.cidr),
               const SizedBox(height: 10),
               const Divider(),
               const Padding(
@@ -495,7 +509,8 @@ class _CalculadoraScreenState extends State<_RedTab>
               _binaryRow('IP:', _ipToBinary(_resolvedIp ?? '0.0.0.0')),
               _binaryRow('Máscara:', _ipToBinary(result.mask)),
               _binaryRow('Red:', _ipToBinary(result.networkAddress)),
-              _binaryRow('Broadcast:', _ipToBinary(result.broadcastAddress)),
+              if (!result.puntoAPunto)
+                _binaryRow('Broadcast:', _ipToBinary(result.broadcastAddress)),
             ] else
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -511,7 +526,7 @@ class _CalculadoraScreenState extends State<_RedTab>
                             ? (_ipBinaryMode
                                 ? 'IP en binario inválida. Se esperan 4 octetos de 8 bits (0/1).'
                                 : 'Dirección IPv4 inválida. Se esperan 4 octetos de 0 a 255.')
-                            : 'Máscara inválida. Debe ser una máscara de subred contigua (/1 a /30).',
+                            : 'Máscara inválida. Debe ser una máscara de subred contigua (/1 a /31).',
                         style: TextStyle(
                             color: theme.colorScheme.error, fontSize: 12.5),
                       ),

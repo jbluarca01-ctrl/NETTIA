@@ -69,6 +69,8 @@ class _VlsmTabState extends State<VlsmTab>
                 const Divider(),
                 FilaDato('Direcciones libres al final:',
                     '${res.direccionesLibres}'),
+                if (res.rangoLibre case final libre?)
+                  FilaDato('Rango libre:', libre),
                 const SizedBox(height: 6),
                 PasosYAvisos(pasos: res.pasos, avisos: res.avisos),
               ],

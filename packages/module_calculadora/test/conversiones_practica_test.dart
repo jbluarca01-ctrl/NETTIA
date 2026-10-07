@@ -21,7 +21,9 @@ void main() {
 
     test('casos extremos y errores', () {
       expect(convertirMascara('/30').hosts, 2);
-      expect(convertirMascara('/31').hosts, 0);
+      // /31: enlace punto a punto, las 2 se usan (RFC 3021, Clase 13).
+      expect(convertirMascara('/31').hosts, 2);
+      expect(convertirMascara('/32').hosts, 0);
       expect(convertirMascara('/0').mascara, '0.0.0.0');
       expect(wildcardDePrefijo(24), '0.0.0.255');
       for (final malo in <String>['255.0.255.0', '/33', 'abc', '', '300.1.1.1']) {

@@ -277,9 +277,14 @@ class ResultadoVlsm {
     required this.direccionesLibres,
     required this.pasos,
     this.avisos = const <String>[],
+    this.rangoLibre,
   });
   final List<SubredIpv4> subredes;
   final int direccionesLibres;
+
+  /// "primera – última" del espacio que queda sin asignar al final; `null`
+  /// si no sobra nada.
+  final String? rangoLibre;
   final List<String> pasos;
   final List<String> avisos;
 }
@@ -329,6 +334,9 @@ ResultadoVlsm calcularVlsm(
   return ResultadoVlsm(
     subredes: subredes,
     direccionesLibres: capacidad - cursor,
+    rangoLibre: cursor < capacidad
+        ? '${_ipTexto(red + cursor)} – ${_ipTexto(red + capacidad - 1)}'
+        : null,
     avisos: avisos,
     pasos: pasos,
   );

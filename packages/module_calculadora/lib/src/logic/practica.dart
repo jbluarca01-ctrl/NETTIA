@@ -5,6 +5,8 @@ library;
 
 import 'dart:math';
 
+import 'and_ipv4.dart';
+import 'clasificacion_ipv4.dart';
 import 'conversiones.dart';
 import 'ipv4_subnetting.dart';
 import 'ipv6.dart';
@@ -14,6 +16,9 @@ enum TipoEjercicio {
   dividirSubredes('Dividir en subredes'),
   hostsPorPrefijo('Hosts, máscara y wildcard'),
   vlsm('VLSM'),
+  redDeIp('Red y broadcast de una IP'),
+  clasificar('Clase y tipo de una IP'),
+  asignable('¿Se puede asignar?'),
   ipv6Abreviar('IPv6: abreviar'),
   ipv6Eui64('IPv6: EUI-64');
 
@@ -56,7 +61,14 @@ class ResultadoCampo {
   final bool acierto;
 }
 
-String _norm(String s) => s.trim().toLowerCase().replaceAll(RegExp(r'\s+'), '');
+const _sinTilde = {'á': 'a', 'é': 'e', 'í': 'i', 'ó': 'o', 'ú': 'u'};
+
+/// Sin espacios, en minúsculas y sin tildes ("Pública" = "publica").
+String _norm(String s) => s
+    .trim()
+    .toLowerCase()
+    .replaceAll(RegExp(r'\s+'), '')
+    .replaceAllMapped(RegExp('[áéíóú]'), (m) => _sinTilde[m[0]]!);
 
 /// Compara ignorando espacios, mayúsculas y la barra inicial de un prefijo
 /// ("/28" y "28" cuentan igual).
@@ -90,6 +102,12 @@ Ejercicio generarEjercicio(TipoEjercicio tipo, Random rnd) {
       return _hostsPorPrefijo(rnd);
     case TipoEjercicio.vlsm:
       return _vlsm(rnd);
+    case TipoEjercicio.redDeIp:
+      return _redDeIp(rnd);
+    case TipoEjercicio.clasificar:
+      return ejercicioClasificar(_elige(rnd, _ipsParaClasificar));
+    case TipoEjercicio.asignable:
+      return _asignable(rnd);
     case TipoEjercicio.ipv6Abreviar:
       return _ipv6Abreviar(rnd);
     case TipoEjercicio.ipv6Eui64:
@@ -143,28 +161,188 @@ Ejercicio _hostsPorPrefijo(Random rnd) {
   );
 }
 
-Ejercicio _vlsm(Random rnd) {
-  final base = '192.168.${rnd.nextInt(200) + 1}.0';
-  final hosts = <int>[
-    _elige(rnd, <int>[60, 80, 100, 110]),
-    _elige(rnd, <int>[20, 30, 40, 50]),
-    _elige(rnd, <int>[6, 10, 12, 14]),
-  ]..sort((a, b) => b.compareTo(a));
-  final r = calcularVlsm(base, 24, <RequerimientoVlsm>[
-    for (var i = 0; i < hosts.length; i++)
-      RequerimientoVlsm('Red ${String.fromCharCode(65 + i)}', hosts[i]),
+Ejercicio _vlsm(Random rnd) => ejercicioVlsm(
+      '192.168.${rnd.nextInt(200) + 1}.0',
+      24,
+      <int>[
+        _elige(rnd, <int>[40, 45, 50, 55, 60]),
+        _elige(rnd, <int>[18, 20, 25, 28, 30]),
+        _elige(rnd, <int>[7, 10, 12, 14]),
+        _elige(rnd, <int>[2, 3, 5, 6]),
+      ],
+    );
+
+/// VLSM de [base]/[cidr] para [hosts] (se asignan de mayor a menor): pide
+/// prefijo, red y broadcast de cada red, como la tabla de la Clase 17.
+Ejercicio ejercicioVlsm(String base, int cidr, List<int> hosts) {
+  final orden = <int>[...hosts]..sort((a, b) => b.compareTo(a));
+  final nombres = <String>[
+    for (var i = 0; i < orden.length; i++) 'Red ${String.fromCharCode(65 + i)}',
+  ];
+  final r = calcularVlsm(base, cidr, <RequerimientoVlsm>[
+    for (var i = 0; i < orden.length; i++) RequerimientoVlsm(nombres[i], orden[i]),
   ]);
+  final pedidas = [
+    for (var i = 0; i < orden.length; i++) '${nombres[i]} (${orden[i]} hosts)',
+  ].join(', ');
   return Ejercicio(
     tipo: TipoEjercicio.vlsm,
-    enunciado: 'Con la red $base/24, asigna subredes VLSM (de mayor a menor) a: '
-        '${[for (var i = 0; i < hosts.length; i++) 'Red ${String.fromCharCode(65 + i)} (${hosts[i]} hosts)'].join(', ')}.',
+    enunciado: 'Con la red $base/$cidr, asigna subredes VLSM (de mayor a '
+        'menor) a: $pedidas.',
     campos: <CampoRespuesta>[
       for (final s in r.subredes) ...<CampoRespuesta>[
         CampoRespuesta('${s.nombre}: prefijo', '/${s.cidr}', ayuda: 'ej. /26'),
         CampoRespuesta('${s.nombre}: dirección de red', s.red, ayuda: 'a.b.c.d'),
+        CampoRespuesta('${s.nombre}: broadcast', s.broadcast, ayuda: 'a.b.c.d'),
       ],
     ],
     pasos: r.pasos,
+  );
+}
+
+List<int> _octetos(String ip) => ip.split('.').map(int.parse).toList();
+
+int _valor(List<int> o) => ((o[0] * 256 + o[1]) * 256 + o[2]) * 256 + o[3];
+
+String _texto(int v) =>
+    '${v ~/ 16777216 % 256}.${v ~/ 65536 % 256}.${v ~/ 256 % 256}.${v % 256}';
+
+/// (red, broadcast) de [v] con /[cidr], como enteros.
+(int, int) _extremos(int v, int cidr) {
+  final tam = pow(2, 32 - cidr).toInt();
+  final red = v - v % tam;
+  return (red, red + tam - 1);
+}
+
+String _ipPrivadaAlAzar(Random rnd) {
+  final primero = _elige(rnd, <int>[10, 172, 192]);
+  final segundo = switch (primero) {
+    10 => rnd.nextInt(256),
+    172 => 16 + rnd.nextInt(16),
+    _ => 168,
+  };
+  return '$primero.$segundo.${rnd.nextInt(256)}.${rnd.nextInt(256)}';
+}
+
+Ejercicio _redDeIp(Random rnd) =>
+    ejercicioRedDeIp(_ipPrivadaAlAzar(rnd), 16 + rnd.nextInt(15));
+
+/// "¿A qué red pertenece [ip]/[cidr]?": red, broadcast y rango útil con el
+/// AND del octeto interesante (Clases 13 y 15).
+Ejercicio ejercicioRedDeIp(String ip, int cidr) {
+  final o = _octetos(ip);
+  final (red, bc) = _extremos(_valor(o), cidr);
+  return Ejercicio(
+    tipo: TipoEjercicio.redDeIp,
+    enunciado: 'La IP $ip/$cidr: ¿a qué red pertenece? Da su red, broadcast '
+        'y rango útil.',
+    campos: <CampoRespuesta>[
+      CampoRespuesta('Dirección de red', _texto(red), ayuda: 'a.b.c.d'),
+      CampoRespuesta('Broadcast', _texto(bc), ayuda: 'a.b.c.d'),
+      CampoRespuesta('Primer host útil', _texto(red + 1), ayuda: 'a.b.c.d'),
+      CampoRespuesta('Último host útil', _texto(bc - 1), ayuda: 'a.b.c.d'),
+    ],
+    pasos: _pasosAnd(o, cidr, _texto(red), _texto(bc)),
+  );
+}
+
+List<String> _pasosAnd(List<int> o, int cidr, String red, String bc) {
+  final mascara = mascaraDePrefijo(cidr);
+  final oi = octetoInteresante(o, cidr);
+  if (oi == null) {
+    return <String>[
+      '1. Máscara /$cidr = $mascara: corta justo entre octetos, los '
+          '${cidr ~/ 8} primeros octetos son de red y el resto de host.',
+      '2. Red: se copian los octetos de red y el resto va en 0 → $red.',
+      '3. Broadcast: el resto va en 255 → $bc.',
+      '4. Rango útil: red + 1 a broadcast − 1.',
+    ];
+  }
+  final n = oi.posicion;
+  return <String>[
+    '1. Máscara /$cidr = $mascara: el octeto interesante es el $n.º '
+        '(${oi.mascara}).',
+    '2. Bloque = 256 − ${oi.mascara} = ${oi.bloque}.',
+    '3. AND del $n.º octeto: ${oi.operacion} → red $red.',
+    '4. Broadcast: la red + ${oi.bloque - 1} en ese octeto y 255 en los '
+        'siguientes → $bc.',
+    '5. Rango útil: red + 1 a broadcast − 1.',
+  ];
+}
+
+/// Direcciones de la guía de la Clase 14, con sus trampas.
+const _ipsParaClasificar = <String>[
+  '10.15.3.7', '172.20.5.9', '192.168.1.20', '8.8.8.8', '172.15.1.1',
+  '224.10.10.10', '240.0.0.1', '169.254.10.5', '127.0.0.1',
+  '255.255.255.255', '172.32.0.9', '200.1.2.3', '130.5.6.7', '192.169.1.1',
+];
+
+/// Respuesta corta esperada para cada tipo.
+const _respuestaTipo = <TipoIpv4, String>{
+  TipoIpv4.publica: 'publica',
+  TipoIpv4.privada: 'privada',
+  TipoIpv4.loopback: 'loopback',
+  TipoIpv4.apipa: 'apipa',
+  TipoIpv4.multicast: 'multicast',
+  TipoIpv4.experimental: 'experimental',
+  TipoIpv4.broadcastLimitado: 'broadcast',
+  TipoIpv4.noEspecificada: 'no especificada',
+  TipoIpv4.reservada: 'reservada',
+};
+
+/// Clase (letra) y tipo de [ip] (Clase 14).
+Ejercicio ejercicioClasificar(String ip) {
+  final c = clasificarIpv4(ip)!;
+  return Ejercicio(
+    tipo: TipoEjercicio.clasificar,
+    enunciado: '¿De qué clase es $ip y qué tipo de dirección es?',
+    campos: <CampoRespuesta>[
+      CampoRespuesta('Clase', c.clase.letra, ayuda: 'A, B, C, D o E'),
+      CampoRespuesta('Tipo', _respuestaTipo[c.tipo]!,
+          ayuda: 'publica, privada, loopback, apipa, multicast, '
+              'experimental o broadcast'),
+    ],
+    pasos: <String>[c.explicacion],
+  );
+}
+
+Ejercicio _asignable(Random rnd) {
+  final cidr = 24 + rnd.nextInt(8); // /24 a /31
+  final (red, bc) = _extremos(_valor(_octetos(_ipPrivadaAlAzar(rnd))), cidr);
+  final ip = switch (rnd.nextInt(3)) {
+    0 => red,
+    1 => bc,
+    _ => cidr == 31 ? red : red + 1 + rnd.nextInt(bc - red - 1),
+  };
+  return ejercicioAsignable(_texto(ip), cidr);
+}
+
+/// (respuesta, motivo) de si [v] se puede asignar en [red]–[bc] con /[cidr].
+(String, String) _motivoAsignable(int v, int red, int bc, int cidr) {
+  if (cidr == 31) {
+    return ('si', '/31 es un enlace punto a punto: las 2 direcciones se '
+        'usan, una por extremo.');
+  }
+  if (v == red) return ('no', 'es la dirección de red: identifica a la subred.');
+  if (v == bc) return ('no', 'es el broadcast: va a todos los hosts de la subred.');
+  return ('si', 'está entre la red y el broadcast: es un host válido.');
+}
+
+/// "¿Se puede asignar [ip]/[cidr] a un host?" (red, broadcast y /31).
+Ejercicio ejercicioAsignable(String ip, int cidr) {
+  final v = _valor(_octetos(ip));
+  final (red, bc) = _extremos(v, cidr);
+  final (respuesta, motivo) = _motivoAsignable(v, red, bc, cidr);
+  return Ejercicio(
+    tipo: TipoEjercicio.asignable,
+    enunciado: '¿Se puede asignar $ip/$cidr a un host?',
+    campos: <CampoRespuesta>[
+      CampoRespuesta('¿Se puede asignar a un host? (si/no)', respuesta),
+    ],
+    pasos: <String>[
+      '1. Red de $ip/$cidr: ${_texto(red)}; broadcast: ${_texto(bc)}.',
+      '2. $ip: $motivo',
+    ],
   );
 }
 
