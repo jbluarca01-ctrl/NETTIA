@@ -130,6 +130,52 @@
     "contenido": "**ACL estándar:** solo filtra por **dirección IP de origen**. Rango numerado clásico **1–99**, ampliado a **1300–1999**.\n```\naccess-list 1 permit 192.168.10.0 0.0.0.255\n```\n\n**ACL extendida:** filtra por **origen, destino, protocolo y puerto/tipo de mensaje** (más específica y más usada en la práctica). Rango numerado clásico **100–199**, ampliado a **2000–2699**.\n```\naccess-list 101 permit ip 192.168.10.0 0.0.0.255 192.168.200.0 0.0.0.255\naccess-list 102 deny tcp any any eq 23\naccess-list 102 permit ip any any\n```\n\n**ACL con nombre:** en vez de un número, se identifica con un nombre descriptivo. Se editan dentro de un submodo, lo que permite **borrar una sola línea** (con `no permit ...` / `no deny ...`) sin recrear toda la lista — algo que las numeradas clásicas no permiten sin usar números de secuencia.\n```\nip access-list standard SOLO-VENTAS\n permit 192.168.10.0 0.0.0.255\n!\nip access-list extended BLOQUEA-TELNET\n deny tcp any any eq 23\n permit ip any any\n```\n\nLas ACL con nombre están disponibles desde IOS 11.2 en adelante y también admiten filtrar por flags de TCP y opciones de IP, algo que las numeradas más antiguas no cubren igual de bien.\n\nVerificación:\n```\nRouter# show access-lists\nRouter# show ip access-lists SOLO-VENTAS\n```"
   },
   {
+    "id": "arp-ip-y-mac",
+    "tema": "arp",
+    "subtema": "ip-y-mac",
+    "titulo": "IP lógica, MAC física y cómo ARP las une (arp -a)",
+    "nivel": "basico",
+    "plataforma": "generico",
+    "version": "IPv4 / Ethernet",
+    "protocolo": "arp",
+    "audiencia": [
+      "estudiante",
+      "profesional"
+    ],
+    "idioma": "es",
+    "estado": "publicado",
+    "verificacion": "fuentes-cruzadas",
+    "comandos_probados": false,
+    "fecha_revision": "2026-10-06",
+    "revisado_por": "Claude (fuentes cruzadas); sin prueba en equipo",
+    "fuentes": [
+      {
+        "titulo": "RFC 826 - An Ethernet Address Resolution Protocol",
+        "ubicacion": "Packet Generation y Packet Reception",
+        "url": "https://www.rfc-editor.org/rfc/rfc826"
+      },
+      {
+        "titulo": "Microsoft Learn - Windows Commands",
+        "ubicacion": "arp",
+        "url": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/arp"
+      }
+    ],
+    "palabras_clave": [
+      "arp",
+      "arp -a",
+      "mac",
+      "ip vs mac",
+      "direccion fisica",
+      "direccion logica",
+      "cache arp",
+      "ipconfig",
+      "broadcast arp",
+      "gateway",
+      "tabla arp"
+    ],
+    "contenido": "- La **IP** es **lógica**: la asigna el administrador o el DHCP, identifica la red y el equipo, y cambia si el equipo se mueve de red.\n- La **MAC** es **física**: 48 bits en hexadecimal grabados en la tarjeta de red (p. ej. AA:BB:CC:DD:EE:FF); sirve para entregar tramas **dentro de la red local**.\n\n**ARP** une las dos: para enviar a una IP de su misma red, el equipo pregunta por **broadcast** (FF:FF:FF:FF:FF:FF) \"¿quién tiene esta IP?\"; solo el dueño responde (unicast) y la respuesta queda en la **caché**, así que el siguiente envío ya no pregunta.\n\nComandos en la PC:\n```\nipconfig /all     (muestra la IP y la MAC propias)\narp -a            (tabla ARP: IP → MAC aprendidas)\n```\n- Si la tabla está vacía, haz `ping` a un vecino y vuelve a ver `arp -a`: aparece una entrada nueva.\n- ARP **solo alcanza la red local**: para llegar a otra red la PC busca la MAC de su **gateway**, no la del destino."
+  },
+  {
     "id": "cloud-modelos-servicio-despliegue",
     "tema": "cloud",
     "subtema": "conceptos",
@@ -510,6 +556,285 @@
       "routed port"
     ],
     "contenido": "En un switch de capa 3 no hace falta un router externo (router-on-a-stick) para comunicar VLAN distintas: cada VLAN tiene su propia **SVI** (*Switch Virtual Interface*), una interfaz lógica `interface vlan X` que funciona como el gateway de esa VLAN.\n\n```\nSwitch(config)# ip routing\n!\nSwitch(config)# interface vlan 10\nSwitch(config-if)# ip address 192.168.10.1 255.255.255.0\nSwitch(config-if)# no shutdown\n!\nSwitch(config)# interface vlan 20\nSwitch(config-if)# ip address 192.168.20.1 255.255.255.0\nSwitch(config-if)# no shutdown\n```\n\n- **`ip routing`** (modo global) es obligatorio: sin él, el switch se comporta como uno de capa 2 y **no enruta** entre las VLAN aunque las SVI tengan IP.\n- Cada host usa como **default gateway la IP de la SVI de su VLAN** (en el ejemplo, 192.168.10.1 para la VLAN 10).\n- Una SVI solo sube (up/up) si **la VLAN existe y tiene al menos un puerto activo** en estado *forwarding* de STP. Una SVI \"down\" suele significar que falta crear la VLAN o que no hay ningún puerto conectado en ella.\n- La SVI de la **VLAN 1** existe por defecto (para administración) y no se puede borrar.\n- Diferencia con un **routed port**: la SVI representa a toda una VLAN (varios puertos); un routed port es **un solo puerto físico** pasado a capa 3 con `no switchport` y con IP propia, sin VLAN asociada.\n\nVerificación:\n```\nSwitch# show ip interface brief\nSwitch# show ip route\n```"
+  },
+  {
+    "id": "ipv4-31-punto-a-punto",
+    "tema": "ipv4",
+    "subtema": "punto-a-punto",
+    "titulo": "Subredes /31 en enlaces punto a punto",
+    "nivel": "intermedio",
+    "plataforma": "generico",
+    "version": "IPv4",
+    "protocolo": "ipv4",
+    "audiencia": [
+      "estudiante",
+      "profesional"
+    ],
+    "idioma": "es",
+    "estado": "publicado",
+    "verificacion": "fuentes-cruzadas",
+    "comandos_probados": false,
+    "fecha_revision": "2026-10-06",
+    "revisado_por": "Claude (fuentes cruzadas); sin prueba en equipo",
+    "fuentes": [
+      {
+        "titulo": "RFC 3021 - Using 31-Bit Prefixes on IPv4 Point-to-Point Links",
+        "ubicacion": "2. Motivation y 3. Addressing",
+        "url": "https://www.rfc-editor.org/rfc/rfc3021"
+      },
+      {
+        "titulo": "RFC 6890 - Special-Purpose IP Address Registries",
+        "ubicacion": "2.2.2 IPv4 Special-Purpose Address Registry Entries",
+        "url": "https://www.rfc-editor.org/rfc/rfc6890"
+      }
+    ],
+    "palabras_clave": [
+      "/31",
+      "255.255.255.254",
+      "punto a punto",
+      "rfc 3021",
+      "enlace serial",
+      "dos direcciones",
+      "sin broadcast",
+      "asignable"
+    ],
+    "contenido": "Una subred **/31** (máscara 255.255.255.254) tiene solo **2 direcciones**. En un enlace **punto a punto** (dos routers, un cable) **las dos se usan**, una en cada extremo:\n\n- 10.0.0.4/31 → extremos **10.0.0.4** y **10.0.0.5**. No hay broadcast útil: en un enlace con un solo vecino no hace falta.\n- Con /30 el mismo enlace gasta 4 direcciones (red, 2 hosts y broadcast); /31 ahorra la mitad.\n- Fuera de un enlace punto a punto **la regla normal se mantiene**: la red y el broadcast no se asignan. Tratar un /31 como una LAN es un error."
+  },
+  {
+    "id": "ipv4-and-red-y-broadcast",
+    "tema": "ipv4",
+    "subtema": "and",
+    "titulo": "Red, broadcast y rango útil con la operación AND",
+    "nivel": "basico",
+    "plataforma": "generico",
+    "version": "IPv4",
+    "protocolo": "ipv4",
+    "audiencia": [
+      "estudiante",
+      "profesional"
+    ],
+    "idioma": "es",
+    "estado": "publicado",
+    "verificacion": "fuentes-cruzadas",
+    "comandos_probados": false,
+    "fecha_revision": "2026-10-06",
+    "revisado_por": "Claude (fuentes cruzadas); sin prueba en equipo",
+    "fuentes": [
+      {
+        "titulo": "RFC 950 - Internet Standard Subnetting Procedure",
+        "ubicacion": "Address Format y Subnet Mask",
+        "url": "https://www.rfc-editor.org/rfc/rfc950"
+      },
+      {
+        "titulo": "RFC 1122 - Requirements for Internet Hosts",
+        "ubicacion": "3.2.1.3 Addressing (direcciones de red y broadcast)",
+        "url": "https://www.rfc-editor.org/rfc/rfc1122"
+      }
+    ],
+    "palabras_clave": [
+      "and",
+      "operacion and",
+      "direccion de red",
+      "broadcast",
+      "rango util",
+      "octeto interesante",
+      "bloque",
+      "256 menos",
+      "primer host",
+      "ultimo host",
+      "no se asigna",
+      "extremos"
+    ],
+    "contenido": "**Red = IP AND máscara** (bit a bit: 1 solo si ambos son 1). **Broadcast** = la red con todos los bits de host en 1.\n\nMétodo rápido con el **octeto interesante** (donde la máscara no es 255 ni 0). Ejemplo 192.168.45.100/19:\n\n1. /19 = 255.255.**224**.0 → el octeto interesante es el 3.º.\n2. Bloque = 256 − 224 = **32**.\n3. AND del 3.º octeto: 45 = 00101101, 224 = 11100000 → 00100000 = **32**. Red: **192.168.32.0**.\n4. Broadcast: red + 31 en ese octeto y 255 después → **192.168.63.255**.\n5. Rango útil: **192.168.32.1 – 192.168.63.254**; gateway habitual: el primero.\n\n- Error típico: copiar el octeto del host como red (el .45 **no** es la red en /19).\n- La dirección de **red** identifica a la subred y el **broadcast** llega a todos; por eso **ninguna de las dos se asigna a un PC** (excepción: /31 punto a punto).\n- Hosts útiles = 2^h − 2, con h = bits de host."
+  },
+  {
+    "id": "ipv4-clases-y-mascara-por-defecto",
+    "tema": "ipv4",
+    "subtema": "clases",
+    "titulo": "Clases de direcciones IPv4 (A a E) y máscara por defecto",
+    "nivel": "basico",
+    "plataforma": "generico",
+    "version": "IPv4",
+    "protocolo": "ipv4",
+    "audiencia": [
+      "estudiante",
+      "profesional"
+    ],
+    "idioma": "es",
+    "estado": "publicado",
+    "verificacion": "fuentes-cruzadas",
+    "comandos_probados": false,
+    "fecha_revision": "2026-10-06",
+    "revisado_por": "Claude (fuentes cruzadas); sin prueba en equipo",
+    "fuentes": [
+      {
+        "titulo": "RFC 791 - Internet Protocol",
+        "ubicacion": "3.2 Addressing (formatos de clase A, B y C)",
+        "url": "https://www.rfc-editor.org/rfc/rfc791"
+      },
+      {
+        "titulo": "RFC 4632 - Classless Inter-domain Routing (CIDR)",
+        "ubicacion": "1. Introduction (por qué se dejaron las clases)",
+        "url": "https://www.rfc-editor.org/rfc/rfc4632"
+      }
+    ],
+    "palabras_clave": [
+      "clase a",
+      "clase b",
+      "clase c",
+      "clase d",
+      "clase e",
+      "primer octeto",
+      "mascara por defecto",
+      "classful",
+      "multicast",
+      "experimental",
+      "que clase es",
+      "ip clase"
+    ],
+    "contenido": "La **clase** de una IPv4 la fija el **primer octeto**, no la máscara que tenga configurada:\n\n| Clase | Primer octeto | Bits iniciales | Máscara por defecto | Uso |\n|---|---|---|---|---|\n| A | 1 – 126 | 0… | 255.0.0.0 (/8) | redes muy grandes |\n| B | 128 – 191 | 10… | 255.255.0.0 (/16) | redes medianas |\n| C | 192 – 223 | 110… | 255.255.255.0 (/24) | redes pequeñas |\n| D | 224 – 239 | 1110… | no tiene | multicast (un origen, un grupo de destinos) |\n| E | 240 – 255 | 1111… | no tiene | experimental / reservada |\n\n- El **127** empieza con bit 0 (como la clase A), pero está reservado para **loopback**; el **0** también está reservado. Por eso los hosts de clase A van de 1 a 126.\n- Ejemplo: 10.1.1.1/24 sigue siendo **clase A** aunque use máscara /24.\n- Hoy el direccionamiento es **sin clases (CIDR)**: la máscara se elige según la necesidad. Las clases se siguen usando para leer rápido una dirección y su máscara \"natural\"."
+  },
+  {
+    "id": "ipv4-direcciones-especiales",
+    "tema": "ipv4",
+    "subtema": "especiales",
+    "titulo": "Direcciones IPv4 especiales (loopback, APIPA, 0.0.0.0 y 255.255.255.255)",
+    "nivel": "basico",
+    "plataforma": "generico",
+    "version": "IPv4",
+    "protocolo": "ipv4",
+    "audiencia": [
+      "estudiante",
+      "profesional"
+    ],
+    "idioma": "es",
+    "estado": "publicado",
+    "verificacion": "fuentes-cruzadas",
+    "comandos_probados": false,
+    "fecha_revision": "2026-10-06",
+    "revisado_por": "Claude (fuentes cruzadas); sin prueba en equipo",
+    "fuentes": [
+      {
+        "titulo": "RFC 6890 - Special-Purpose IP Address Registries",
+        "ubicacion": "2.2.2 IPv4 Special-Purpose Address Registry Entries",
+        "url": "https://www.rfc-editor.org/rfc/rfc6890"
+      },
+      {
+        "titulo": "RFC 3927 - Dynamic Configuration of IPv4 Link-Local Addresses",
+        "ubicacion": "1. Introduction",
+        "url": "https://www.rfc-editor.org/rfc/rfc3927"
+      },
+      {
+        "titulo": "RFC 1122 - Requirements for Internet Hosts",
+        "ubicacion": "3.2.1.3 Addressing",
+        "url": "https://www.rfc-editor.org/rfc/rfc1122"
+      }
+    ],
+    "palabras_clave": [
+      "loopback",
+      "127.0.0.1",
+      "apipa",
+      "169.254",
+      "link-local",
+      "0.0.0.0",
+      "255.255.255.255",
+      "broadcast limitado",
+      "dhcp fallo",
+      "direccion especial",
+      "autoasignada"
+    ],
+    "contenido": "Direcciones que **nunca se asignan a un host** como su IP normal:\n\n| Dirección | Nombre | Para qué sirve |\n|---|---|---|\n| 127.0.0.0/8 (127.0.0.1) | Loopback | tráfico hacia el propio equipo; `ping 127.0.0.1` prueba la pila TCP/IP |\n| 169.254.0.0/16 | Link-local (APIPA) | el equipo se la **autoasigna cuando falla el DHCP**; sin conectividad útil fuera del enlace |\n| 0.0.0.0 | No especificada | origen de un cliente mientras pide IP por DHCP; también es la ruta por defecto (0.0.0.0/0) |\n| 255.255.255.255 | Broadcast limitado | a todos los equipos del segmento local; los routers no lo reenvían |\n\n- Si `ipconfig` muestra **169.254.x.x**, el problema no es la IP: la PC **no recibió respuesta del DHCP**. Revisa el servidor o pool, la VLAN del puerto y el trunk, o asigna una IP fija.\n- Además, la primera dirección de cada subred (dirección de red) y la última (broadcast) tampoco se asignan a hosts."
+  },
+  {
+    "id": "ipv4-privadas-rfc1918",
+    "tema": "ipv4",
+    "subtema": "privadas",
+    "titulo": "Direcciones IPv4 privadas (RFC 1918) y públicas",
+    "nivel": "basico",
+    "plataforma": "generico",
+    "version": "IPv4",
+    "protocolo": "ipv4",
+    "audiencia": [
+      "estudiante",
+      "profesional"
+    ],
+    "idioma": "es",
+    "estado": "publicado",
+    "verificacion": "fuentes-cruzadas",
+    "comandos_probados": false,
+    "fecha_revision": "2026-10-06",
+    "revisado_por": "Claude (fuentes cruzadas); sin prueba en equipo",
+    "fuentes": [
+      {
+        "titulo": "RFC 1918 - Address Allocation for Private Internets",
+        "ubicacion": "3. Private Address Space",
+        "url": "https://www.rfc-editor.org/rfc/rfc1918"
+      },
+      {
+        "titulo": "RFC 6890 - Special-Purpose IP Address Registries",
+        "ubicacion": "2.2.2 IPv4 Special-Purpose Address Registry Entries",
+        "url": "https://www.rfc-editor.org/rfc/rfc6890"
+      }
+    ],
+    "palabras_clave": [
+      "ip privada",
+      "ip publica",
+      "rfc 1918",
+      "10.0.0.0/8",
+      "172.16.0.0/12",
+      "192.168.0.0/16",
+      "nat",
+      "es privada",
+      "es publica",
+      "172.15",
+      "172.32"
+    ],
+    "contenido": "Los tres bloques **privados** de RFC 1918:\n\n| Bloque | Rango | Equivale a |\n|---|---|---|\n| 10.0.0.0/8 | 10.0.0.0 – 10.255.255.255 | una red de clase A |\n| 172.16.0.0/12 | 172.16.0.0 – 172.31.255.255 | 16 redes de clase B |\n| 192.168.0.0/16 | 192.168.0.0 – 192.168.255.255 | 256 redes de clase C |\n\n- Una dirección **privada** solo es válida dentro de la red interna: se **reutiliza** en millones de redes y necesita **NAT** para salir a Internet. La asigna el administrador o el DHCP local.\n- Una dirección **pública** es única y enrutable en Internet; la reparte IANA a los registros regionales y estos a los ISP.\n- Trampa frecuente: **172.15.x.x y 172.32.x.x son públicas**; el bloque privado de clase B va solo de **172.16 a 172.31**.\n- Privada no significa falsa: es válida en su red; para unir redes hace falta un router y para salir a Internet, NAT."
+  },
+  {
+    "id": "ipv4-vlsm-mayor-a-menor",
+    "tema": "ipv4",
+    "subtema": "vlsm",
+    "titulo": "VLSM - subredes a medida, de mayor a menor y sin solapes",
+    "nivel": "intermedio",
+    "plataforma": "generico",
+    "version": "IPv4",
+    "protocolo": "ipv4",
+    "audiencia": [
+      "estudiante",
+      "profesional"
+    ],
+    "idioma": "es",
+    "estado": "publicado",
+    "verificacion": "fuentes-cruzadas",
+    "comandos_probados": false,
+    "fecha_revision": "2026-10-06",
+    "revisado_por": "Claude (fuentes cruzadas); sin prueba en equipo",
+    "fuentes": [
+      {
+        "titulo": "RFC 4632 - Classless Inter-domain Routing (CIDR)",
+        "ubicacion": "3. Classless Addressing",
+        "url": "https://www.rfc-editor.org/rfc/rfc4632"
+      },
+      {
+        "titulo": "RFC 950 - Internet Standard Subnetting Procedure",
+        "ubicacion": "Subnet Mask",
+        "url": "https://www.rfc-editor.org/rfc/rfc950"
+      }
+    ],
+    "palabras_clave": [
+      "vlsm",
+      "mascara variable",
+      "mayor a menor",
+      "solape",
+      "alineado",
+      "multiplo del bloque",
+      "2^n-2",
+      "tabla vlsm",
+      "desperdicio",
+      "mascara fija"
+    ],
+    "contenido": "Con **máscara fija** todas las subredes miden lo mismo y se desperdician direcciones; con **VLSM** cada red recibe el bloque más pequeño que le alcanza.\n\nPasos (ejemplo 192.168.10.0/24 para 50, 25, 12 y 5 hosts):\n\n1. **Ordenar de mayor a menor**: 50 → 25 → 12 → 5.\n2. Elegir el **/ mínimo** con 2^h − 2 ≥ hosts: 50 → /26 (62), 25 → /27 (30), 12 → /28 (14), 5 → /29 (6).\n3. **Bloques**: 64, 32, 16, 8.\n4. Asignar **contiguo y alineado** (cada red empieza en un múltiplo de su bloque): .0/26, .64/27, .96/28, .112/29. Queda libre .120 – .255.\n\nControles antes de configurar:\n- Ningún rango toca al siguiente (broadcast .63 → red .64, .95 → .96, .111 → .112).\n- La suma de bloques no pasa del espacio disponible (64+32+16+8 = 120 ≤ 256).\n- Si se empieza por la red pequeña, la grande queda desalineada o no cabe."
   },
   {
     "id": "ipv6-configuracion-ios",
