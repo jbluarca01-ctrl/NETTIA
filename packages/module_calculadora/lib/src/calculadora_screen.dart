@@ -7,6 +7,7 @@ import 'dividir_tab.dart';
 import 'ipv6_tab.dart';
 import 'practica_tab.dart';
 import 'vlsm_tab.dart';
+import 'widgets/clasificacion_vista.dart';
 
 class _SubnetResult {
   final String mask;
@@ -481,6 +482,7 @@ class _CalculadoraScreenState extends State<_RedTab>
               _infoRow('Último Host:', result.lastHost),
               _infoRow('Broadcast:', result.broadcastAddress),
               _infoRow('Capacidad:', '${result.totalHosts} hosts útiles'),
+              ClasificacionVista(_resolvedIp!),
               const SizedBox(height: 10),
               const Divider(),
               const Padding(
