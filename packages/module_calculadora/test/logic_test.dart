@@ -3,6 +3,11 @@ import 'package:module_calculadora/src/logic/ipv4_subnetting.dart';
 import 'package:module_calculadora/src/logic/ipv6.dart';
 
 void main() {
+  test('el gateway sugerido de una subred es su primer host', () {
+    final s = dividirEnSubredes('192.168.1.0', 24, 16).subredes[1];
+    expect(s.gateway, '192.168.1.17');
+  });
+
   group('dividir en N subredes (IPv4)', () {
     test('192.168.1.0/24 en 16 subredes → /28 (el caso del parcial)', () {
       final d = dividirEnSubredes('192.168.1.0', 24, 16);

@@ -16,6 +16,8 @@ Nettia vivió en `c:\dev\PRAXIA\apps\nettia\` hasta el 2026-09-29; desde entonce
 
 `c:\dev\Nettia` es el checkout principal, reservado para Claude Code. Cualquier otro agente trabaja en su propio `git worktree` (`git worktree add ../nettia_<agente>_<rama> -b <agente>/<rama>-work <rama>`).
 
+**Todo worktree es temporal (orden de Jairo, 2026-09-29):** cuando termina el trabajo para el que se creó (integrado, entregado o descartado), se elimina con `git worktree remove <ruta>` y no se deja carpeta suelta en `c:\dev\`. Antes de eliminarlo se verifica que no quede trabajo sin integrar (`git status`, commits no integrados); si queda, se reporta a Claude Code en vez de borrarlo.
+
 ## Coordinación y reportes
 
 - Claude Code es el arquitecto y el único punto de contacto con Jairo. Los demás agentes solo se comunican con Claude Code, por `c:\dev\coordinacion\Nettia\` (`ORDEN_<DESTINATARIO>_<TEMA>_YYYY-MM-DD.md` / `RESPUESTA_<REMITENTE>_<TEMA>_YYYY-MM-DD.md`).

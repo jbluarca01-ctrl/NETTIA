@@ -173,10 +173,12 @@ class TablaSubredesIpv4 extends StatelessWidget {
   final int? primerasUsadas;
 
   String _comoTexto() {
-    final b = StringBuffer('#\tRed\tMáscara\tPrimer host\tÚltimo host\tBroadcast\tHosts\n');
+    final b = StringBuffer(
+        '#\tRed\tMáscara\tGateway\tPrimer host\tÚltimo host\tBroadcast\tHosts\n');
     for (final s in subredes) {
       b.writeln('${s.nombre ?? s.indice}\t${s.red}/${s.cidr}\t${s.mascara}\t'
-          '${s.primerHost}\t${s.ultimoHost}\t${s.broadcast}\t${s.hostsUtiles}');
+          '${s.gateway}\t${s.primerHost}\t${s.ultimoHost}\t${s.broadcast}\t'
+          '${s.hostsUtiles}');
     }
     return b.toString();
   }
@@ -216,6 +218,7 @@ class TablaSubredesIpv4 extends StatelessWidget {
               DataColumn(label: Text(conNombre ? 'Red' : '#')),
               const DataColumn(label: Text('Subred')),
               const DataColumn(label: Text('Máscara')),
+              const DataColumn(label: Text('Gateway')),
               const DataColumn(label: Text('Primer host')),
               const DataColumn(label: Text('Último host')),
               const DataColumn(label: Text('Broadcast')),
@@ -229,6 +232,7 @@ class TablaSubredesIpv4 extends StatelessWidget {
                       s.nombre ?? '${s.indice}',
                       '${s.red}/${s.cidr}',
                       s.mascara,
+                      s.gateway,
                       s.primerHost,
                       s.ultimoHost,
                       s.broadcast,

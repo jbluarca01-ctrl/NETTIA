@@ -27,6 +27,10 @@ class SubredIpv4 {
   final String ultimoHost;
   final String broadcast;
   final int hostsUtiles;
+
+  /// Gateway sugerido: el primer host útil, el mismo criterio de la pestaña
+  /// "Red".
+  String get gateway => primerHost;
 }
 
 /// Resultado de dividir una red: la lista de subredes y los pasos del cálculo

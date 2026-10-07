@@ -50,7 +50,6 @@ class _NettiaAppState extends State<NettiaApp> {
       theme: NetworkTheme.lightTheme,
       darkTheme: NetworkTheme.darkTheme,
       // Textos del sistema (diálogos, selectores, menús) en español.
-      locale: const Locale('es'),
       supportedLocales: const [Locale('es')],
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
       // El perfil (estudiante/profesional) va antes que todo lo demás: sin
