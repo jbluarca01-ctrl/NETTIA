@@ -103,6 +103,9 @@ final _pasos = StepRegistry<void>.fromMap({
   ): (_, ctx) async {
     expect(_seg(ctx.arg<String>(0)).utilizacionPct, ctx.arg<int>(1));
   },
+  'el segmento "{n}" explica "{t}"'.mapper(): (_, ctx) async {
+    expect(_seg(ctx.arg<String>(0)).explicacion, ctx.arg<String>(1));
+  },
   'quedan {n} direcciones libres'.mapper(types: {'n': int}): (_, ctx) async {
     expect(_m.plan!.direccionesLibres, ctx.arg<int>(0));
   },

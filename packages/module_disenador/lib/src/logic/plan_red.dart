@@ -52,6 +52,7 @@ class SegmentoPlan {
     required this.broadcast,
     required this.hostsPedidos,
     required this.utilizacionPct,
+    required this.explicacion,
   });
 
   final String nombre;
@@ -70,6 +71,10 @@ class SegmentoPlan {
 
   /// Hosts pedidos sobre direcciones del DHCP, en porcentaje (truncado).
   final int utilizacionPct;
+
+  /// Por qué el bloque tiene ese tamaño: direcciones necesarias (el gateway
+  /// cuenta como una más) y útiles del bloque.
+  final String explicacion;
 }
 
 /// El plan completo: segmentos en orden de asignación (de mayor a menor).
@@ -238,7 +243,24 @@ int _siguienteLibre(int anterior, Map<int, String> usadas, int nativa) {
 /// Direcciones útiles que necesita un segmento: hosts con el crecimiento
 /// (redondeado hacia arriba), más las reservadas, más el gateway.
 int _necesarias(int hosts, OpcionesPlan o) =>
-    (hosts * (100 + o.crecimientoPct) + 99) ~/ 100 + o.reservadas + 1;
+    _conCrecimiento(hosts, o) + o.reservadas + 1;
+
+int _conCrecimiento(int hosts, OpcionesPlan o) =>
+    (hosts * (100 + o.crecimientoPct) + 99) ~/ 100;
+
+String _explicacion(int hosts, int cidr, OpcionesPlan o) {
+  final conCrecimiento = _conCrecimiento(hosts, o);
+  final partes = [
+    if (o.crecimientoPct == 0)
+      '$conCrecimiento hosts'
+    else
+      '$conCrecimiento hosts con ${o.crecimientoPct} % de crecimiento',
+    if (o.reservadas > 0) '${o.reservadas} reservadas',
+    '1 gateway',
+  ];
+  return 'Necesita ${_necesarias(hosts, o)} direcciones '
+      '(${partes.join(' + ')}) → /$cidr con ${(1 << (32 - cidr)) - 2} útiles.';
+}
 
 SegmentoPlan _segmentoPlan(
   SubredIpv4 sub,
@@ -270,5 +292,6 @@ SegmentoPlan _segmentoPlan(
     broadcast: sub.broadcast,
     hostsPedidos: hostsPedidos,
     utilizacionPct: hostsPedidos * 100 ~/ dhcp.cantidad,
+    explicacion: _explicacion(hostsPedidos, sub.cidr, o),
   );
 }

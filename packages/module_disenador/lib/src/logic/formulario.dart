@@ -17,12 +17,14 @@ class EntradaDiseno {
     this.dns = '',
     this.dominio = '',
     this.clave = '',
+    this.switches = 1,
+    this.conexion = Conexion.alRouter,
   });
 
   final String redBase;
 
-  /// Filas (nombre, hosts); las filas vacías se ignoran.
-  final List<(String, String)> segmentos;
+  /// Filas (nombre, hosts en SW1, SW2…); las filas vacías se ignoran.
+  final List<(String, List<String>)> segmentos;
   final String reservadas;
   final String crecimiento;
   final bool gatewayAlFinal;
@@ -30,6 +32,10 @@ class EntradaDiseno {
   final String dns;
   final String dominio;
   final String clave;
+
+  /// Switches de acceso; en capa 3 siempre hay uno.
+  final int switches;
+  final Conexion conexion;
 }
 
 /// Todo lo que sale de un diseño válido.
@@ -44,10 +50,11 @@ class Diseno {
 /// mostrar si algo de lo escrito no sirve.
 Diseno disenar(EntradaDiseno e) {
   final (red, cidr) = leerRedBase(e.redBase);
+  final switches = e.topologia == Topologia.switchCapa3 ? 1 : e.switches;
   final plan = planificarRed(
     red,
     cidr,
-    leerSegmentos(e.segmentos),
+    leerSegmentos(e.segmentos, switches: switches),
     OpcionesPlan(
       reservadas: leerEntero(e.reservadas, 'IPs reservadas'),
       crecimientoPct: leerEntero(e.crecimiento, 'crecimiento'),
@@ -59,6 +66,9 @@ Diseno disenar(EntradaDiseno e) {
     dns: e.dns.trim(),
     dominio: e.dominio.trim(),
     enableSecret: e.clave.trim(),
+    switches: switches,
+    conexion: e.conexion,
+    pcPorSwitch: leerReparto(e.segmentos, switches),
   );
   return Diseno(plan, generarConfiguracion(plan, o), planVerificacion(plan, o));
 }
@@ -75,19 +85,41 @@ Diseno disenar(EntradaDiseno e) {
   return (partes[0].trim(), cidr);
 }
 
-/// Segmentos de las filas no vacías del formulario.
-List<Segmento> leerSegmentos(List<(String, String)> filas) => [
-  for (final (nombre, hosts) in filas)
-    if (nombre.trim().isNotEmpty || hosts.trim().isNotEmpty)
-      Segmento(nombre.trim(), _hosts(nombre.trim(), hosts)),
+/// Segmentos de las filas no vacías del formulario: los hosts son la suma
+/// de las PC en los primeros [switches].
+List<Segmento> leerSegmentos(
+  List<(String, List<String>)> filas, {
+  int switches = 1,
+}) => [
+  for (final (nombre, pcs) in _filas(filas, switches))
+    Segmento(nombre, pcs.reduce((a, b) => a + b)),
 ];
 
-int _hosts(String nombre, String texto) {
-  final n = int.tryParse(texto.trim());
-  if (n == null) {
-    throw DisenoException('"$nombre": escribe los hosts como un número.');
-  }
-  return n;
+/// PC de cada segmento (por nombre) en SW1, SW2…; un campo vacío vale 0.
+Map<String, List<int>> leerReparto(
+  List<(String, List<String>)> filas,
+  int switches,
+) => {for (final (nombre, pcs) in _filas(filas, switches)) nombre: pcs};
+
+List<(String, List<int>)> _filas(
+  List<(String, List<String>)> filas,
+  int switches,
+) => [
+  for (final (nombre, campos) in filas)
+    if (_conDatos(nombre, campos.take(switches)))
+      (nombre.trim(), _pcs(nombre.trim(), campos.take(switches))),
+];
+
+bool _conDatos(String nombre, Iterable<String> campos) =>
+    nombre.trim().isNotEmpty || campos.any((c) => c.trim().isNotEmpty);
+
+List<int> _pcs(String nombre, Iterable<String> campos) {
+  final error = DisenoException('"$nombre": escribe los hosts como un número.');
+  final textos = [for (final c in campos) c.trim()];
+  if (textos.every((t) => t.isEmpty)) throw error;
+  return [
+    for (final t in textos) t.isEmpty ? 0 : int.tryParse(t) ?? (throw error),
+  ];
 }
 
 /// Número de un campo opcional: vacío vale 0.

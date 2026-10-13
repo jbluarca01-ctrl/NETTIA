@@ -1,37 +1,12 @@
 /// Configuración CLI de Cisco IOS generada a partir de un [PlanRed].
 library;
 
+import 'fisica.dart';
+import 'opciones.dart';
 import 'plan_red.dart';
 
-/// Cómo se enrutan las VLAN entre sí.
-enum Topologia { routerOnAStick, switchCapa3 }
-
-/// Datos de los equipos que no salen del plan.
-class OpcionesConfig {
-  const OpcionesConfig({
-    this.topologia = Topologia.routerOnAStick,
-    this.hostnameSwitch = 'SW1',
-    this.hostnameRouter = 'R1',
-    this.troncalSwitch = 'GigabitEthernet0/1',
-    this.interfazRouter = 'GigabitEthernet0/0/0',
-    this.prefijoAcceso = 'FastEthernet0/',
-    this.puertosAcceso = 24,
-    this.dns = '',
-    this.dominio = '',
-    this.enableSecret = '',
-  });
-
-  final Topologia topologia;
-  final String hostnameSwitch;
-  final String hostnameRouter;
-  final String troncalSwitch;
-  final String interfazRouter;
-  final String prefijoAcceso;
-  final int puertosAcceso;
-  final String dns;
-  final String dominio;
-  final String enableSecret;
-}
+export 'fisica.dart' show rangosDeAcceso;
+export 'opciones.dart';
 
 /// La configuración de un equipo, línea por línea.
 class ConfigEquipo {
@@ -39,22 +14,6 @@ class ConfigEquipo {
   final String hostname;
   final List<String> lineas;
   String get texto => lineas.join('\n');
-}
-
-/// Rango de puertos de acceso de cada segmento, en el orden del plan.
-List<String> rangosDeAcceso(PlanRed plan, OpcionesConfig o) {
-  final n = plan.segmentos.length;
-  final porSegmento = o.puertosAcceso ~/ n;
-  if (porSegmento < 1) {
-    throw DisenoException(
-      'No alcanzan los ${o.puertosAcceso} puertos de '
-      'acceso para $n segmentos.',
-    );
-  }
-  return [
-    for (var i = 0; i < n; i++)
-      '${o.prefijoAcceso}${i * porSegmento + 1} - ${(i + 1) * porSegmento}',
-  ];
 }
 
 /// Nombre aceptado por IOS para VLAN y pools: mayúsculas, sin tildes y con
@@ -76,43 +35,47 @@ String nombreIos(String nombre) {
       .replaceAll(RegExp(r'^_+|_+$'), '');
 }
 
-/// Configuración de cada equipo: switch y router en router-on-a-stick, o un
-/// único switch capa 3.
+/// Configuración de cada equipo: un switch por cada switch de acceso y el
+/// router en router-on-a-stick, o un único switch capa 3.
 List<ConfigEquipo> generarConfiguracion(PlanRed plan, OpcionesConfig o) {
-  final puertos = rangosDeAcceso(plan, o);
-  final l3 = o.topologia == Topologia.switchCapa3;
-  final sw = [
-    ..._encabezado(o.hostnameSwitch, o),
-    ..._vlans(plan, incluirNativa: !l3),
-    for (var i = 0; i < plan.segmentos.length; i++)
-      ..._acceso(puertos[i], plan.segmentos[i]),
-    if (l3) ..._svis(plan) else ..._troncal(plan, o),
-    if (l3) ..._dhcp(plan, o),
-    ..._cierre,
-  ];
-  if (l3) return [ConfigEquipo(o.hostnameSwitch, sw)];
-  final router = [
-    ..._encabezado(o.hostnameRouter, o),
-    ..._subinterfaces(plan, o),
-    ..._dhcp(plan, o),
-    ..._cierre,
-  ];
+  final f = disenarFisica(plan, o);
+  if (o.topologia == Topologia.switchCapa3) {
+    final sw = f.switches.single;
+    return [
+      ConfigEquipo(sw.hostname, [
+        ..._encabezado(sw.hostname, o),
+        ..._vlans(sw.vlans, null),
+        ..._accesos(sw),
+        ..._svis(plan),
+        ..._dhcp(plan, o),
+        ..._cierre,
+      ]),
+    ];
+  }
+  final nativa = plan.opciones.vlanNativa;
   return [
-    ConfigEquipo(o.hostnameSwitch, sw),
-    ConfigEquipo(o.hostnameRouter, router),
+    for (final sw in f.switches)
+      ConfigEquipo(sw.hostname, [
+        ..._encabezado(sw.hostname, o),
+        ..._vlans(sw.vlans, nativa),
+        ..._accesos(sw),
+        for (final t in sw.troncales) ..._troncal(t, nativa),
+        ..._cierre,
+      ]),
+    ConfigEquipo(o.hostnameRouter, [
+      ..._encabezado(o.hostnameRouter, o),
+      for (final i in f.router) ..._subinterfaces(i, nativa),
+      ..._dhcp(plan, o),
+      ..._cierre,
+    ]),
   ];
 }
 
-/// VLAN que debe permitir el troncal: las del plan y la nativa, separadas
-/// por comas.
-String vlansPermitidas(PlanRed plan) => [
-  for (final s in plan.segmentos) s.vlan,
-  plan.opciones.vlanNativa,
-].join(_coma);
-
-const String _coma = ',';
-
 const List<String> _cierre = ['end', 'write memory'];
+
+/// Cierra el submodo (VLAN, interfaz o pool) y vuelve a la configuración
+/// global, para que lo pegado no quede atascado en un submodo.
+const String _salir = 'exit';
 
 List<String> _encabezado(String hostname, OpcionesConfig o) => [
   'enable',
@@ -127,35 +90,37 @@ List<String> _encabezado(String hostname, OpcionesConfig o) => [
   'banner motd #Acceso solo autorizado#',
 ];
 
-List<String> _vlans(PlanRed plan, {required bool incluirNativa}) => [
-  for (final s in plan.segmentos) ...[
+/// VLAN del switch y, si hay troncal, la [nativa].
+List<String> _vlans(List<SegmentoPlan> segmentos, int? nativa) => [
+  for (final s in segmentos) ...[
     'vlan ${s.vlan}',
     ' name ${nombreIos(s.nombre)}',
+    _salir,
   ],
-  if (incluirNativa) ...['vlan ${plan.opciones.vlanNativa}', ' name NATIVA'],
+  if (nativa != null) ...['vlan $nativa', ' name NATIVA', _salir],
 ];
 
-List<String> _acceso(String puertos, SegmentoPlan s) => [
-  'interface range $puertos',
-  ' description ${s.nombre}',
-  ' switchport mode access',
-  ' switchport access vlan ${s.vlan}',
-  ' spanning-tree portfast',
-  ' no shutdown',
-];
-
-List<String> _troncal(PlanRed plan, OpcionesConfig o) {
-  final nativa = plan.opciones.vlanNativa;
-  final permitidas = vlansPermitidas(plan);
-  return [
-    'interface ${o.troncalSwitch}',
-    ' description TRONCAL',
-    ' switchport mode trunk',
-    ' switchport trunk native vlan $nativa',
-    ' switchport trunk allowed vlan $permitidas',
+List<String> _accesos(SwitchFisico sw) => [
+  for (final (s, puertos) in sw.acceso) ...[
+    'interface range $puertos',
+    ' description ${s.nombre}',
+    ' switchport mode access',
+    ' switchport access vlan ${s.vlan}',
+    ' spanning-tree portfast',
     ' no shutdown',
-  ];
-}
+    _salir,
+  ],
+];
+
+List<String> _troncal(Troncal t, int nativa) => [
+  'interface ${t.puerto}',
+  ' description TRONCAL a ${t.vecino}',
+  ' switchport mode trunk',
+  ' switchport trunk native vlan $nativa',
+  ' switchport trunk allowed vlan ${t.vlans}',
+  ' no shutdown',
+  _salir,
+];
 
 List<String> _svis(PlanRed plan) => [
   'ip routing',
@@ -164,24 +129,27 @@ List<String> _svis(PlanRed plan) => [
     ' description ${s.nombre}',
     ' ip address ${s.gateway} ${s.mascara}',
     ' no shutdown',
+    _salir,
   ],
 ];
 
-List<String> _subinterfaces(PlanRed plan, OpcionesConfig o) {
-  final fisica = o.interfazRouter;
-  final nativa = plan.opciones.vlanNativa;
+List<String> _subinterfaces(InterfazRouter i, int nativa) {
+  final fisica = i.nombre;
   return [
     'interface $fisica',
     ' no shutdown',
-    for (final s in plan.segmentos) ...[
+    _salir,
+    for (final s in i.segmentos) ...[
       'interface $fisica.${s.vlan}',
       ' description ${s.nombre}',
       ' encapsulation dot1Q ${s.vlan}',
       ' ip address ${s.gateway} ${s.mascara}',
+      _salir,
     ],
     'interface $fisica.$nativa',
     ' description NATIVA',
     ' encapsulation dot1Q $nativa native',
+    _salir,
   ];
 }
 
@@ -195,5 +163,6 @@ List<String> _dhcp(PlanRed plan, OpcionesConfig o) => [
     ' default-router ${s.gateway}',
     if (o.dns.isNotEmpty) ' dns-server ${o.dns}',
     if (o.dominio.isNotEmpty) ' domain-name ${o.dominio}',
+    _salir,
   ],
 ];

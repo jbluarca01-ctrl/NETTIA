@@ -20,28 +20,34 @@ Feature: Configuración CLI generada a partir del plan
       banner motd #Acceso solo autorizado#
       vlan 10
        name VENTAS
+      exit
       vlan 20
        name TI
+      exit
       vlan 99
        name NATIVA
+      exit
       interface range FastEthernet0/1 - 12
        description VENTAS
        switchport mode access
        switchport access vlan 10
        spanning-tree portfast
        no shutdown
+      exit
       interface range FastEthernet0/13 - 24
        description TI
        switchport mode access
        switchport access vlan 20
        spanning-tree portfast
        no shutdown
+      exit
       interface GigabitEthernet0/1
-       description TRONCAL
+       description TRONCAL a R1
        switchport mode trunk
        switchport trunk native vlan 99
        switchport trunk allowed vlan 10,20,99
        no shutdown
+      exit
       end
       write memory
       """
@@ -56,29 +62,35 @@ Feature: Configuración CLI generada a partir del plan
       banner motd #Acceso solo autorizado#
       interface GigabitEthernet0/0/0
        no shutdown
+      exit
       interface GigabitEthernet0/0/0.10
        description VENTAS
        encapsulation dot1Q 10
        ip address 192.168.10.1 255.255.255.192
+      exit
       interface GigabitEthernet0/0/0.20
        description TI
        encapsulation dot1Q 20
        ip address 192.168.10.65 255.255.255.224
+      exit
       interface GigabitEthernet0/0/0.99
        description NATIVA
        encapsulation dot1Q 99 native
+      exit
       ip dhcp excluded-address 192.168.10.1
       ip dhcp pool VENTAS
        network 192.168.10.0 255.255.255.192
        default-router 192.168.10.1
        dns-server 8.8.8.8
        domain-name empresa.local
+      exit
       ip dhcp excluded-address 192.168.10.65
       ip dhcp pool TI
        network 192.168.10.64 255.255.255.224
        default-router 192.168.10.65
        dns-server 8.8.8.8
        domain-name empresa.local
+      exit
       end
       write memory
       """
@@ -100,22 +112,26 @@ Feature: Configuración CLI generada a partir del plan
       banner motd #Acceso solo autorizado#
       vlan 10
        name SERVIDORES
+      exit
       interface range FastEthernet0/1 - 24
        description SERVIDORES
        switchport mode access
        switchport access vlan 10
        spanning-tree portfast
        no shutdown
+      exit
       ip routing
       interface Vlan10
        description SERVIDORES
        ip address 10.0.0.30 255.255.255.224
        no shutdown
+      exit
       ip dhcp excluded-address 10.0.0.30
       ip dhcp excluded-address 10.0.0.1 10.0.0.5
       ip dhcp pool SERVIDORES
        network 10.0.0.0 255.255.255.224
        default-router 10.0.0.30
+      exit
       end
       write memory
       """

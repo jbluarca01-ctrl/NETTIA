@@ -33,6 +33,13 @@ class VistaPlan extends StatelessWidget {
   Widget build(BuildContext context) => _conDiseno(
     diseno,
     (d) => [
+      const Padding(
+        padding: EdgeInsets.only(bottom: _hueco),
+        child: Text(
+          'El gateway ocupa una dirección del bloque: 6 PC necesitan 7 '
+          'direcciones y no caben en un /29 (6 útiles), por eso salen en un /28.',
+        ),
+      ),
       for (final s in d.plan.segmentos) _TarjetaSegmento(s),
       Text(
         'Quedan ${d.plan.direccionesLibres} direcciones libres en la red base.',
@@ -63,6 +70,7 @@ class _TarjetaSegmento extends StatelessWidget {
           Text('Gateway ${s.gateway} · DHCP ${s.dhcp}'),
           if (s.reservadas case final r?) Text('Reservadas $r'),
           Text('${s.hostsPedidos} hosts · uso del DHCP ${s.utilizacionPct} %'),
+          Text(s.explicacion),
         ],
       ),
     ),

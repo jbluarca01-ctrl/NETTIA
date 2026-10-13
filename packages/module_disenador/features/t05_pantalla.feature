@@ -120,3 +120,76 @@ Feature: Pantalla del Diseñador de red
     And toco "Diseñar"
     And abro la pestaña "Auditar"
     Then no veo "Sin diferencias con el plan."
+
+  Scenario: Las opciones de enrutamiento llevan el título Topología
+    Given la pantalla del Diseñador
+    Then veo "Topología"
+    And veo "Router-on-a-stick"
+    And veo "Switch capa 3"
+
+  Scenario: Los nombres con espacios salen con guion bajo y se avisa
+    Given la pantalla del Diseñador
+    Then veo "En la configuración los espacios pasan a _ (Sala de reuniones → SALA_DE_REUNIONES): es lo que acepta un switch real."
+    When escribo "Sala de reuniones" en el nombre del segmento 1
+    And toco "Diseñar"
+    And abro la pestaña "Configuración"
+    Then veo el texto que contiene "name SALA_DE_REUNIONES"
+    And veo el texto que contiene "ip dhcp pool SALA_DE_REUNIONES"
+
+  Scenario: El Plan explica por qué el gateway agranda el bloque
+    Given la pantalla del Diseñador
+    When toco "Diseñar"
+    Then veo "El gateway ocupa una dirección del bloque: 6 PC necesitan 7 direcciones y no caben en un /29 (6 útiles), por eso salen en un /28."
+    And veo "Necesita 51 direcciones (50 hosts + 1 gateway) → /26 con 62 útiles."
+    And veo "Necesita 21 direcciones (20 hosts + 1 gateway) → /27 con 30 útiles."
+
+  Scenario: Con un solo switch la pantalla queda como siempre
+    Given la pantalla del Diseñador
+    Then veo "Switches"
+    And veo "1 switch"
+    And no veo "Conexión"
+    And no veo "SW2"
+
+  Scenario: Con dos switches cada segmento pide sus PC en cada uno
+    Given la pantalla del Diseñador
+    When elijo "2 switches"
+    Then veo "Segmentos: nombre y PC por switch"
+    And veo "SW1"
+    And veo "SW2"
+    And veo "Conexión"
+    And veo "Cada uno al router"
+    When escribo "0" en los hosts del segmento 2
+    And escribo "20" en las PC del segmento 2 en SW2
+    And toco "Diseñar"
+    And abro la pestaña "Configuración"
+    Then veo "SW2"
+    And veo el texto que contiene "interface GigabitEthernet0/0/1.20"
+
+  Scenario: Una VLAN repartida necesita switches enlazados
+    Given la pantalla del Diseñador
+    When elijo "2 switches"
+    And escribo "5" en las PC del segmento 1 en SW2
+    And toco "Diseñar"
+    Then veo "VENTAS (VLAN 10) tiene PC en varios switches (SW1, SW2); con «Cada uno al router» no llegan a un mismo gateway. Elige «Ambos» o deja sus PC en un solo switch."
+    When elijo "Ambos"
+    And toco "Diseñar"
+    And abro la pestaña "Configuración"
+    Then veo el texto que contiene "description TRONCAL a SW1"
+
+  Scenario: Tres switches en cadena
+    Given la pantalla del Diseñador
+    When elijo "3 switches"
+    And elijo "En cadena"
+    And escribo "0" en los hosts del segmento 2
+    And escribo "10" en las PC del segmento 2 en SW2
+    And escribo "10" en las PC del segmento 2 en SW3
+    And toco "Diseñar"
+    And abro la pestaña "Configuración"
+    Then veo "SW3"
+    And veo el texto que contiene "description TRONCAL a SW2"
+
+  Scenario: Con switch capa 3 no se eligen switches
+    Given la pantalla del Diseñador
+    When elijo "Switch capa 3"
+    Then no veo "Switches"
+    And no veo "2 switches"

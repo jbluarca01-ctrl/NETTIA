@@ -15,7 +15,8 @@ class DisenadorScreen extends StatefulWidget {
   State<DisenadorScreen> createState() => _DisenadorScreenState();
 }
 
-typedef _Fila = (TextEditingController, TextEditingController);
+/// Nombre del segmento y sus PC en SW1, SW2 y SW3.
+typedef _Fila = (TextEditingController, List<TextEditingController>);
 
 class _DisenadorScreenState extends State<DisenadorScreen>
     with SingleTickerProviderStateMixin {
@@ -40,6 +41,8 @@ class _DisenadorScreenState extends State<DisenadorScreen>
   final _dominio = TextEditingController();
   final _clave = TextEditingController();
   Topologia _topologia = Topologia.routerOnAStick;
+  int _switches = 1;
+  Conexion _conexion = Conexion.alRouter;
   bool _gatewayAlFinal = false;
   Diseno? _diseno;
   String? _error;
@@ -48,10 +51,25 @@ class _DisenadorScreenState extends State<DisenadorScreen>
   /// Hallazgos de la última auditoría; se descartan al diseñar de nuevo.
   List<Hallazgo>? _hallazgos;
 
+  static const int _maxSwitches = 3;
+
   static _Fila _fila(String nombre, String hosts) => (
     TextEditingController(text: nombre),
-    TextEditingController(text: hosts),
+    [
+      TextEditingController(text: hosts),
+      for (var i = 1; i < _maxSwitches; i++) TextEditingController(),
+    ],
   );
+
+  /// Switches que se piden: en capa 3 siempre uno.
+  int get _n => _topologia == Topologia.switchCapa3 ? 1 : _switches;
+
+  static void _liberar(_Fila f) {
+    f.$1.dispose();
+    for (final c in f.$2) {
+      c.dispose();
+    }
+  }
 
   @override
   void dispose() {
@@ -66,10 +84,7 @@ class _DisenadorScreenState extends State<DisenadorScreen>
     ]) {
       c.dispose();
     }
-    for (final (nombre, hosts) in _filas) {
-      nombre.dispose();
-      hosts.dispose();
-    }
+    _filas.forEach(_liberar);
     _tabs.dispose();
     super.dispose();
   }
@@ -93,7 +108,9 @@ class _DisenadorScreenState extends State<DisenadorScreen>
 
   EntradaDiseno _entrada() => EntradaDiseno(
     redBase: _red.text,
-    segmentos: [for (final (n, h) in _filas) (n.text, h.text)],
+    segmentos: [
+      for (final (n, hs) in _filas) (n.text, [for (final h in hs) h.text]),
+    ],
     reservadas: _reservadas.text,
     crecimiento: _crecimiento.text,
     gatewayAlFinal: _gatewayAlFinal,
@@ -101,6 +118,8 @@ class _DisenadorScreenState extends State<DisenadorScreen>
     dns: _dns.text,
     dominio: _dominio.text,
     clave: _clave.text,
+    switches: _switches,
+    conexion: _conexion,
   );
 
   void _agregar() => setState(() => _filas.add(_fila('', '')));
@@ -108,12 +127,9 @@ class _DisenadorScreenState extends State<DisenadorScreen>
   /// Quita la fila [i]; sus controladores se liberan después del cuadro en
   /// que dejan de usarse.
   void _quitar(int i) {
-    final (nombre, hosts) = _filas[i];
+    final fila = _filas[i];
     setState(() => _filas.removeAt(i));
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      nombre.dispose();
-      hosts.dispose();
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _liberar(fila));
   }
 
   void _auditar(PlanRed plan) =>
@@ -151,7 +167,18 @@ class _DisenadorScreenState extends State<DisenadorScreen>
       padding: const EdgeInsets.all(_hueco),
       children: [
         _campo(_red, 'Red base'),
-        Text('Segmentos: nombre y hosts', style: tema.textTheme.titleSmall),
+        ..._equipos(tema),
+        Text(
+          _n == 1
+              ? 'Segmentos: nombre y hosts'
+              : 'Segmentos: nombre y PC por switch',
+          style: tema.textTheme.titleSmall,
+        ),
+        Text(
+          'En la configuración los espacios pasan a _ (Sala de reuniones → '
+          'SALA_DE_REUNIONES): es lo que acepta un switch real.',
+          style: tema.textTheme.bodySmall,
+        ),
         for (var i = 0; i < _filas.length; i++) _filaSegmento(i),
         Align(
           alignment: Alignment.centerLeft,
@@ -192,10 +219,21 @@ class _DisenadorScreenState extends State<DisenadorScreen>
         Expanded(
           child: _campo(nombre, 'Nombre', key: ValueKey('segmento_nombre_$n')),
         ),
-        const SizedBox(width: _hueco),
-        Expanded(
-          child: _campo(hosts, 'Hosts', key: ValueKey('segmento_hosts_$n')),
-        ),
+        for (var j = 0; j < _n; j++)
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(left: _hueco),
+              child: _campo(
+                hosts[j],
+                _n == 1 ? 'Hosts' : 'SW${j + 1}',
+                key: ValueKey(
+                  j == 0
+                      ? 'segmento_hosts_$n'
+                      : 'segmento_hosts_${n}_sw${j + 1}',
+                ),
+              ),
+            ),
+          ),
         IconButton(
           tooltip: 'Quitar segmento $n',
           icon: const Icon(Icons.remove_circle_outline),
@@ -205,24 +243,48 @@ class _DisenadorScreenState extends State<DisenadorScreen>
     );
   }
 
-  List<Widget> _opciones() => [
-    Padding(
-      padding: const EdgeInsets.only(bottom: _hueco),
-      child: SegmentedButton<Topologia>(
-        segments: const [
-          ButtonSegment(
-            value: Topologia.routerOnAStick,
-            label: Text('Router-on-a-stick'),
-          ),
-          ButtonSegment(
-            value: Topologia.switchCapa3,
-            label: Text('Switch capa 3'),
-          ),
-        ],
-        selected: {_topologia},
-        onSelectionChanged: (s) => setState(() => _topologia = s.first),
-      ),
+  /// Topología y, en router-on-a-stick, cuántos switches y cómo se conectan.
+  List<Widget> _equipos(ThemeData tema) => [
+    Text('Topología', style: tema.textTheme.titleSmall),
+    _selector<Topologia>(_topologia, const {
+      Topologia.routerOnAStick: 'Router-on-a-stick',
+      Topologia.switchCapa3: 'Switch capa 3',
+    }, (v) => _topologia = v),
+    if (_topologia == Topologia.routerOnAStick) ...[
+      Text('Switches', style: tema.textTheme.titleSmall),
+      _selector<int>(_switches, const {
+        1: '1 switch',
+        2: '2 switches',
+        3: '3 switches',
+      }, (v) => _switches = v),
+    ],
+    if (_n > 1) ...[
+      Text('Conexión', style: tema.textTheme.titleSmall),
+      _selector<Conexion>(_conexion, const {
+        Conexion.alRouter: 'Cada uno al router',
+        Conexion.enCadena: 'En cadena',
+        Conexion.ambos: 'Ambos',
+      }, (v) => _conexion = v),
+    ],
+  ];
+
+  Widget _selector<T>(
+    T valor,
+    Map<T, String> opciones,
+    void Function(T) elegir,
+  ) => Padding(
+    padding: const EdgeInsets.only(bottom: _hueco),
+    child: SegmentedButton<T>(
+      segments: [
+        for (final MapEntry(:key, :value) in opciones.entries)
+          ButtonSegment(value: key, label: Text(value)),
+      ],
+      selected: {valor},
+      onSelectionChanged: (s) => setState(() => elegir(s.first)),
     ),
+  );
+
+  List<Widget> _opciones() => [
     _campo(_reservadas, 'IPs reservadas por segmento'),
     _campo(_crecimiento, 'Crecimiento previsto (%)'),
     SwitchListTile(
