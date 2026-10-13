@@ -62,6 +62,16 @@ final _pasos = StepRegistry<void>.fromMap({
       ctx.arg<String>(0),
     );
   },
+  'escribo "{v}" en las PC del segmento {n} en SW{s}'.mapper(
+    types: {'n': int, 's': int},
+  ): (_, ctx) async {
+    await probador.enterText(
+      find.byKey(
+        ValueKey('segmento_hosts_${ctx.arg<int>(1)}_sw${ctx.arg<int>(2)}'),
+      ),
+      ctx.arg<String>(0),
+    );
+  },
   'quito el segmento {n}'.mapper(types: {'n': int}): (_, ctx) async {
     await _tocar(find.byTooltip('Quitar segmento ${ctx.arg<int>(0)}'));
   },
