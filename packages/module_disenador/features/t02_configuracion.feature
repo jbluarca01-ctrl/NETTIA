@@ -42,7 +42,7 @@ Feature: Configuración CLI generada a partir del plan
        no shutdown
       exit
       interface GigabitEthernet0/1
-       description TRONCAL
+       description TRONCAL a R1
        switchport mode trunk
        switchport trunk native vlan 99
        switchport trunk allowed vlan 10,20,99
