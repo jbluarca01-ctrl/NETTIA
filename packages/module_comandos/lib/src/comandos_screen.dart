@@ -76,6 +76,13 @@ class _ComandosScreenState extends State<ComandosScreen> {
       description: 'Para el enlace hacia el router u otro switch.',
     ),
     _CommandSnippet(
+      title: 'Definir la VLAN nativa del trunk',
+      command: 'switchport trunk native vlan <id>',
+      description:
+          'Ej.: switchport trunk native vlan 99. Debe ser la misma en ambos '
+          'extremos del enlace; si no, IOS avisa Native VLAN mismatch.',
+    ),
+    _CommandSnippet(
       title: 'Permitir VLANs en el trunk',
       command: 'switchport trunk allowed vlan <lista>',
       description: 'Ej.: switchport trunk allowed vlan 10,20,30,40.',

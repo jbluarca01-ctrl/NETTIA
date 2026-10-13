@@ -152,6 +152,11 @@ class _DisenadorScreenState extends State<DisenadorScreen>
       children: [
         _campo(_red, 'Red base'),
         Text('Segmentos: nombre y hosts', style: tema.textTheme.titleSmall),
+        Text(
+          'En la configuración los espacios pasan a _ (Sala de reuniones → '
+          'SALA_DE_REUNIONES): es lo que acepta un switch real.',
+          style: tema.textTheme.bodySmall,
+        ),
         for (var i = 0; i < _filas.length; i++) _filaSegmento(i),
         Align(
           alignment: Alignment.centerLeft,
@@ -206,6 +211,7 @@ class _DisenadorScreenState extends State<DisenadorScreen>
   }
 
   List<Widget> _opciones() => [
+    Text('Topología', style: Theme.of(context).textTheme.titleSmall),
     Padding(
       padding: const EdgeInsets.only(bottom: _hueco),
       child: SegmentedButton<Topologia>(

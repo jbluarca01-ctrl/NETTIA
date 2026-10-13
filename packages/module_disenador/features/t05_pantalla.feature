@@ -120,3 +120,18 @@ Feature: Pantalla del Diseñador de red
     And toco "Diseñar"
     And abro la pestaña "Auditar"
     Then no veo "Sin diferencias con el plan."
+
+  Scenario: Las opciones de enrutamiento llevan el título Topología
+    Given la pantalla del Diseñador
+    Then veo "Topología"
+    And veo "Router-on-a-stick"
+    And veo "Switch capa 3"
+
+  Scenario: Los nombres con espacios salen con guion bajo y se avisa
+    Given la pantalla del Diseñador
+    Then veo "En la configuración los espacios pasan a _ (Sala de reuniones → SALA_DE_REUNIONES): es lo que acepta un switch real."
+    When escribo "Sala de reuniones" en el nombre del segmento 1
+    And toco "Diseñar"
+    And abro la pestaña "Configuración"
+    Then veo el texto que contiene "name SALA_DE_REUNIONES"
+    And veo el texto que contiene "ip dhcp pool SALA_DE_REUNIONES"
