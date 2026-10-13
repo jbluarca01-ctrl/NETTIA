@@ -66,4 +66,33 @@ void main() {
       },
     );
   });
+
+  property('la explicación pide el bloque más chico donde cabe', () {
+    forAll(
+      combine3(
+        integer(min: 1, max: 300),
+        integer(min: 0, max: 5),
+        integer(min: 0, max: 50),
+      ),
+      (entrada) {
+        final (hosts, reservadas, crecimiento) = entrada;
+        final s = planificarRed('10.0.0.0', 16, [
+          Segmento('S', hosts),
+        ], OpcionesPlan(reservadas: reservadas, crecimientoPct: crecimiento))
+            .segmentos
+            .single;
+        final m = RegExp(
+          r'^Necesita (\d+) direcciones \((\d+) hosts.* \+ 1 gateway\) → '
+          r'/(\d+) con (\d+) útiles\.$',
+        ).firstMatch(s.explicacion)!;
+        final necesarias = int.parse(m[1]!);
+        final utiles = int.parse(m[4]!);
+        expect(int.parse(m[2]!), greaterThanOrEqualTo(hosts));
+        expect(int.parse(m[3]!), s.cidr);
+        expect(utiles, (1 << (32 - s.cidr)) - 2);
+        expect(necesarias, lessThanOrEqualTo(utiles));
+        expect(necesarias, greaterThan((1 << (31 - s.cidr)) - 2));
+      },
+    );
+  });
 }

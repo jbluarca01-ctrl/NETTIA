@@ -41,4 +41,34 @@ void main() {
       expect(ultimo, lessThanOrEqualTo(puertos));
     });
   });
+
+  property('cada submodo de la configuración se cierra con exit', () {
+    forAll(combine2(integer(min: 1, max: 6), boolean()), (entrada) {
+      final (n, l3) = entrada;
+      final plan = planificarRed('10.0.0.0', 16, [
+        for (var i = 0; i < n; i++) Segmento('S$i', 10),
+      ], const OpcionesPlan());
+      final equipos = generarConfiguracion(
+        plan,
+        OpcionesConfig(
+          topologia: l3 ? Topologia.switchCapa3 : Topologia.routerOnAStick,
+          dns: '8.8.8.8',
+        ),
+      );
+      final submodo = RegExp(r'^(vlan |interface |ip dhcp pool )');
+      for (final e in equipos) {
+        var abierto = false;
+        for (final l in e.lineas.where((l) => !l.startsWith(' '))) {
+          if (abierto) {
+            expect(l, 'exit');
+            abierto = false;
+          } else {
+            expect(l, isNot('exit'));
+            abierto = submodo.hasMatch(l);
+          }
+        }
+        expect(abierto, isFalse);
+      }
+    });
+  });
 }

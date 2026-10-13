@@ -55,6 +55,13 @@ class _ComandosScreenState extends State<ComandosScreen> {
       description: 'Se ejecuta dentro del modo de configuración de la VLAN.',
     ),
     _CommandSnippet(
+      title: 'Salir del modo de la VLAN',
+      command: 'exit',
+      description:
+          'Vuelve a Switch(config)# para crear la siguiente VLAN o entrar a '
+          'una interfaz.',
+    ),
+    _CommandSnippet(
       title: 'Entrar a una interfaz (o rango)',
       command: 'interface range fastEthernet 0/<inicio>-<fin>',
       description:
@@ -69,6 +76,11 @@ class _ComandosScreenState extends State<ComandosScreen> {
       title: 'Asignar el puerto a una VLAN',
       command: 'switchport access vlan <id>',
       description: 'Asocia el/los puerto(s) seleccionados a esa VLAN.',
+    ),
+    _CommandSnippet(
+      title: 'Salir de la interfaz',
+      command: 'exit',
+      description: 'Vuelve a Switch(config)# antes de entrar a otra interfaz.',
     ),
     _CommandSnippet(
       title: 'Poner el puerto en modo trunk',
@@ -86,6 +98,13 @@ class _ComandosScreenState extends State<ComandosScreen> {
       title: 'Permitir VLANs en el trunk',
       command: 'switchport trunk allowed vlan <lista>',
       description: 'Ej.: switchport trunk allowed vlan 10,20,30,40.',
+    ),
+    _CommandSnippet(
+      title: 'Volver al modo privilegiado',
+      command: 'end',
+      description:
+          'Sale de cualquier submodo directo a Switch#; copy running-config '
+          'solo funciona ahí.',
     ),
     _CommandSnippet(
       title: 'Guardar la configuración',
@@ -118,6 +137,11 @@ class _ComandosScreenState extends State<ComandosScreen> {
       description: 'Sin esto la interfaz queda administrativamente abajo.',
     ),
     _CommandSnippet(
+      title: 'Salir de la interfaz física',
+      command: 'exit',
+      description: 'Vuelve a Router(config)# para crear las subinterfaces.',
+    ),
+    _CommandSnippet(
       title: 'Crear una subinterfaz',
       command: 'interface gigabitEthernet 0/0/0.<id>',
       description: 'El <id> suele coincidir con el número de VLAN.',
@@ -131,6 +155,20 @@ class _ComandosScreenState extends State<ComandosScreen> {
       title: 'Asignar IP y máscara a la subinterfaz',
       command: 'ip address <ip> <mascara>',
       description: 'Esa IP funciona como gateway de esa VLAN.',
+    ),
+    _CommandSnippet(
+      title: 'Salir de la subinterfaz',
+      command: 'exit',
+      description:
+          'Repite crear subinterfaz, encapsulation, ip address y exit por '
+          'cada VLAN.',
+    ),
+    _CommandSnippet(
+      title: 'Volver al modo privilegiado',
+      command: 'end',
+      description:
+          'Sale de cualquier submodo directo a Router#; copy running-config '
+          'solo funciona ahí.',
     ),
     _CommandSnippet(
       title: 'Guardar la configuración',

@@ -79,3 +79,19 @@ Feature: Plan de direccionamiento a partir de requisitos
     And el segmento "VENTAS" con 5 hosts
     When planifico la red
     Then el diseño se rechaza con "El nombre \"VENTAS\" está repetido."
+
+  Scenario: El gateway cuenta como un host más
+    Given la red base "192.168.1.0/24"
+    And el segmento "AULA" con 6 hosts
+    When planifico la red
+    Then el segmento "AULA" queda en la VLAN 10 con la red "192.168.1.0/28"
+    And el segmento "AULA" explica "Necesita 7 direcciones (6 hosts + 1 gateway) → /28 con 14 útiles."
+
+  Scenario: La explicación del bloque suma el crecimiento y las reservadas
+    Given la red base "10.0.0.0/24"
+    And el segmento "SERVIDORES" con 10 hosts
+    And 5 IPs reservadas por segmento
+    And un crecimiento del 20 %
+    When planifico la red
+    Then el segmento "SERVIDORES" queda en la VLAN 10 con la red "10.0.0.0/27"
+    And el segmento "SERVIDORES" explica "Necesita 18 direcciones (12 hosts con 20 % de crecimiento + 5 reservadas + 1 gateway) → /27 con 30 útiles."

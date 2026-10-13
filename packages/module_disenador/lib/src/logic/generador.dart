@@ -114,6 +114,10 @@ const String _coma = ',';
 
 const List<String> _cierre = ['end', 'write memory'];
 
+/// Cierra el submodo (VLAN, interfaz o pool) y vuelve a la configuración
+/// global, para que lo pegado no quede atascado en un submodo.
+const String _salir = 'exit';
+
 List<String> _encabezado(String hostname, OpcionesConfig o) => [
   'enable',
   'configure terminal',
@@ -131,8 +135,13 @@ List<String> _vlans(PlanRed plan, {required bool incluirNativa}) => [
   for (final s in plan.segmentos) ...[
     'vlan ${s.vlan}',
     ' name ${nombreIos(s.nombre)}',
+    _salir,
   ],
-  if (incluirNativa) ...['vlan ${plan.opciones.vlanNativa}', ' name NATIVA'],
+  if (incluirNativa) ...[
+    'vlan ${plan.opciones.vlanNativa}',
+    ' name NATIVA',
+    _salir,
+  ],
 ];
 
 List<String> _acceso(String puertos, SegmentoPlan s) => [
@@ -142,6 +151,7 @@ List<String> _acceso(String puertos, SegmentoPlan s) => [
   ' switchport access vlan ${s.vlan}',
   ' spanning-tree portfast',
   ' no shutdown',
+  _salir,
 ];
 
 List<String> _troncal(PlanRed plan, OpcionesConfig o) {
@@ -154,6 +164,7 @@ List<String> _troncal(PlanRed plan, OpcionesConfig o) {
     ' switchport trunk native vlan $nativa',
     ' switchport trunk allowed vlan $permitidas',
     ' no shutdown',
+    _salir,
   ];
 }
 
@@ -164,6 +175,7 @@ List<String> _svis(PlanRed plan) => [
     ' description ${s.nombre}',
     ' ip address ${s.gateway} ${s.mascara}',
     ' no shutdown',
+    _salir,
   ],
 ];
 
@@ -173,15 +185,18 @@ List<String> _subinterfaces(PlanRed plan, OpcionesConfig o) {
   return [
     'interface $fisica',
     ' no shutdown',
+    _salir,
     for (final s in plan.segmentos) ...[
       'interface $fisica.${s.vlan}',
       ' description ${s.nombre}',
       ' encapsulation dot1Q ${s.vlan}',
       ' ip address ${s.gateway} ${s.mascara}',
+      _salir,
     ],
     'interface $fisica.$nativa',
     ' description NATIVA',
     ' encapsulation dot1Q $nativa native',
+    _salir,
   ];
 }
 
@@ -195,5 +210,6 @@ List<String> _dhcp(PlanRed plan, OpcionesConfig o) => [
     ' default-router ${s.gateway}',
     if (o.dns.isNotEmpty) ' dns-server ${o.dns}',
     if (o.dominio.isNotEmpty) ' domain-name ${o.dominio}',
+    _salir,
   ],
 ];

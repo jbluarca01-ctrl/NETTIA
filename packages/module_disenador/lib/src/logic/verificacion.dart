@@ -31,9 +31,9 @@ List<PasoVerificacion> planVerificacion(PlanRed plan, OpcionesConfig o) {
       PasoVerificacion(
         enrutador,
         'show ip interface brief',
-        '${l3 ? 'Vlan${s.vlan}' : '${o.interfazRouter}.${s.vlan}'} con '
-            '${s.gateway}, estado up/up',
+        '${_interfaz(s, o)} con ${s.gateway}, estado up/up',
       ),
+    for (final s in segs) ..._coherencia(enrutador, s, o),
     for (final s in segs) ..._pc(s),
     if (segs.length > 1)
       PasoVerificacion(
@@ -57,6 +57,37 @@ PasoVerificacion _troncal(PlanRed plan, OpcionesConfig o) {
     'show interfaces trunk',
     '${o.troncalSwitch} en trunking, nativa $nativa, VLAN permitidas $permitidas',
   );
+}
+
+/// Interfaz que hace de gateway del segmento: la SVI en capa 3 o la
+/// subinterfaz del router.
+String _interfaz(SegmentoPlan s, OpcionesConfig o) =>
+    o.topologia == Topologia.switchCapa3
+        ? 'Vlan${s.vlan}'
+        : '${o.interfazRouter}.${s.vlan}';
+
+/// El pool DHCP y el gateway deben tener la misma máscara: si no, las PC no
+/// reciben IP y no hay otro síntoma.
+List<PasoVerificacion> _coherencia(
+  String enrutador,
+  SegmentoPlan s,
+  OpcionesConfig o,
+) {
+  final pool = nombreIos(s.nombre);
+  return [
+    PasoVerificacion(
+      enrutador,
+      'show ip dhcp pool $pool',
+      'Total addresses ${(1 << (32 - s.cidr)) - 2}, el tamaño del bloque '
+          '/${s.cidr}; otro número indica una máscara mal escrita en el pool',
+    ),
+    PasoVerificacion(
+      enrutador,
+      'show ip interface ${_interfaz(s, o)}',
+      'Internet address is ${s.gateway}/${s.cidr}, la misma máscara que el '
+          'pool $pool',
+    ),
+  ];
 }
 
 List<PasoVerificacion> _pc(SegmentoPlan s) => [

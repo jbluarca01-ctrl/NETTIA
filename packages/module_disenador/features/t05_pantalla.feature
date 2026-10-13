@@ -135,3 +135,10 @@ Feature: Pantalla del Diseñador de red
     And abro la pestaña "Configuración"
     Then veo el texto que contiene "name SALA_DE_REUNIONES"
     And veo el texto que contiene "ip dhcp pool SALA_DE_REUNIONES"
+
+  Scenario: El Plan explica por qué el gateway agranda el bloque
+    Given la pantalla del Diseñador
+    When toco "Diseñar"
+    Then veo "El gateway ocupa una dirección del bloque: 6 PC necesitan 7 direcciones y no caben en un /29 (6 útiles), por eso salen en un /28."
+    And veo "Necesita 51 direcciones (50 hosts + 1 gateway) → /26 con 62 útiles."
+    And veo "Necesita 21 direcciones (20 hosts + 1 gateway) → /27 con 30 útiles."
