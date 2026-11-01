@@ -35,6 +35,8 @@ Todo trabajo avanza por estos estados **en orden**. Prohibido saltar un estado o
 
 Si en `QA` o `ENDURECIMIENTO` falla algo, se regresa al estado responsable (`CÓDIGO` o `REFACTOR`), no se parchea en el sitio.
 
+Qué estados aplican depende del **nivel de rigor** del cambio (sección 11). La tabla completa rige para el nivel N2.
+
 ---
 
 ## 2. Test-first obligatorio
@@ -48,7 +50,7 @@ Si en `QA` o `ENDURECIMIENTO` falla algo, se regresa al estado responsable (`CÓ
 
 ## 3. El gauntlet (puertas deterministas)
 
-Todas deben pasar. Los valores son mínimos, nunca se negocian a la baja.
+Todas las puertas **del nivel del cambio** (sección 11) deben pasar. Los valores son mínimos, nunca se negocian a la baja.
 
 | Puerta | Umbral |
 |--------|--------|
@@ -83,6 +85,7 @@ Todas deben pasar. Los valores son mínimos, nunca se negocian a la baja.
 **Solo software gratuito.** Prohibido usar herramientas, plugins, licencias o servicios de pago, incluidos planes gratuitos con tope de uso. Si una puerta solo tiene opción de pago, la puerta falla.
 
 Duplicación en todos los stacks: `jscpd` (o PMD CPD en JVM).
+Mutación de Gherkin en todos los stacks: la puerta propia del gate universal (`c:\dev\gate`), que altera los valores y pasos de cada `.feature` y exige que su acceptance test falle. Mientras esa puerta no esté integrada al gate de un proyecto, se sustituye por la revisión de escenarios del arquitecto (cada regla con su caso de error y cada valor del `Then` verificado por su paso), registrada en el walkthrough.
 Stack no listado: se usan las herramientas universales (`lizard` para complejidad, `jscpd` para duplicación, Cucumber para Gherkin) y, para el resto de las puertas, el agente propone el equivalente y espera aprobación **antes** de escribir código. Una puerta sin herramienta **falla**; nunca se omite.
 
 ### Definición de "terminado"
@@ -114,7 +117,7 @@ Violar cualquiera de estas = entrega rechazada automáticamente, sin revisar el 
 
 Todo walkthrough debe incluir los tres puntos. Incompleto en cualquiera = **rechazado**.
 
-1. **Código real y completo** de lo cambiado (nunca resúmenes en prosa como sustituto).
+1. **Código real**: hash del commit + `git diff --stat` (el código se lee en git, no se pega). Si algo no está commiteado, ese código sí se pega completo. Nunca resúmenes en prosa como sustituto.
 2. **Desviaciones**: lista explícita de todo lo hecho que la directiva no contemplaba (o "Ninguna" de forma explícita).
 3. **Ciclo de vida de estado**: para todo estado, variable, flag, caché o recurso introducido: dónde nace, quién lo modifica, cuándo se limpia/destruye.
 
@@ -193,3 +196,30 @@ Esta excepción **no levanta** el resto de las prohibiciones ni del gauntlet:
 - Jairo puede revocar esta excepción en cualquier momento; una orden suya en contra prevalece.
 
 Para todo agente que no sea Claude Code, las secciones 4.6 y 9 rigen sin cambios.
+
+---
+
+## 11. Niveles de rigor y momento de la mutación
+
+Aprobado por Jairo el 2026-11-01 para bajar el costo de tiempo sin bajar ningún umbral numérico.
+
+### 11.1 Niveles
+
+| Nivel | Qué cambios | Estados que aplican | Puertas que aplican |
+|-------|-------------|---------------------|---------------------|
+| **N0 trivial** | Documentación, textos y traducciones, estilos sin lógica, borrar código muerto sin importadores, configuración sin lógica | `CÓDIGO → ENTREGA` | Linter/analizador en 0 + suite existente en verde |
+| **N1 normal** | UI, cableado entre capas, bugs simples, refactor sin cambio de comportamiento | `INVESTIGACIÓN` solo si la causa es desconocida · `GHERKIN` solo si hay comportamiento visible nuevo · `CÓDIGO` (test-first con rojo previo) · `REFACTOR` y `ENDURECIMIENTO` en un solo paso · `QA` si toca lo que ve el usuario · `ENTREGA` | Todas **menos mutación** (de código y de Gherkin) |
+| **N2 crítico** | Cálculo, parsing, conversión de unidades, máquinas de estado, seguridad y secretos, persistencia y migraciones, núcleo de IA/RAG, el propio gate | Los 8 estados de la sección 1 | **Todo el gauntlet** |
+
+### 11.2 Quién fija el nivel
+1. El arquitecto lo declara en la orden de la tarea.
+2. Manda el nivel más alto de lo tocado: si un cambio toca un solo archivo N2, todo el cambio es N2.
+3. En duda, el nivel superior. El ejecutor **nunca** baja el nivel; si cree que corresponde otro, lo reporta.
+
+### 11.3 Momento de la mutación (N2)
+1. La mutación de código y la de Gherkin corren **una sola vez, al cierre de la feature** (estado `ENTREGA`), siempre diferenciales (solo lo cambiado), no en cada tarea ni en cada intento.
+2. Durante las tareas intermedias, el gate corre sin mutación. Esas tareas no se declaran terminadas; la feature sí, cuando la corrida final sale en 0.
+3. El watchdog (sección 6) cuenta los intentos de esa corrida final.
+
+### 11.4 Cómo se mide
+Mientras el gate no tenga selector de nivel, para N0/N1 se entrega la salida real de los comandos de las puertas que aplican (analizador, tests, cobertura del diff, complejidad), y el gate completo corre al cierre de la feature.

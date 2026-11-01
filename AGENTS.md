@@ -7,6 +7,8 @@ El texto íntegro y vinculante está en [`LEY_DE_CALIDAD.md`](LEY_DE_CALIDAD.md)
 - **Terminado = el gate sale con código 0** (`gate` desde la raíz de la app o del paquete tocado), con la salida real como evidencia.
 - **Git:** prohibidos `merge`, `rebase`, `reset --hard`, `push --force`, tags y escribir en `main`. Commit autónomo solo con gate en 0, en ramas `feature/*`, `fix/*` o `gate/*`. Excepción Ley §10: solo Claude Code puede commitear y hacer `push` (sin `--force`) sin gate en 0, a esas ramas, con "sin gate" en el mensaje.
 - **Watchdog:** máximo 3 intentos por puerta.
+- **Niveles (Ley §11):** N0 trivial (docs, textos, código muerto) = linter + suite; N1 normal (UI, cableado, bugs simples) = todo menos mutación; N2 crítico (cálculo, parsing, estados, seguridad, persistencia, IA/RAG) = gauntlet completo. Manda el nivel más alto de lo tocado. La mutación (código y Gherkin) corre una sola vez al cierre de la feature.
+- **Walkthrough:** hash del commit + `git diff --stat`; el código no commiteado se pega completo.
 
 ## Origen
 
