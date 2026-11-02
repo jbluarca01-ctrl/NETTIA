@@ -3,6 +3,8 @@
 /// entera con `+`, `-`, `~/` y `%` (sin operadores de bits).
 library;
 
+import 'dart:math';
+
 /// Error de validación con mensaje listo para mostrar.
 class ConversionException implements Exception {
   const ConversionException(this.mensaje);
@@ -153,71 +155,118 @@ class ResultadoSumarizacion {
   final List<String> pasos;
 }
 
+
+/// Valor entero de una IPv4 "a.b.c.d", o null si no es válida.
+int? ipDesdeTexto(String s) => _parseIp(s);
+
+/// IPv4 "a.b.c.d" del valor entero [v].
+String ipATexto(int v) => _ipTexto(v);
+
+/// Prefijo de 0 a 32 escrito en [s], o null.
+int? _prefijoValido(String s) {
+  final n = int.tryParse(s);
+  return n != null && n >= 0 && n <= 32 ? n : null;
+}
+
+/// IP y prefijo de "a.b.c.d/n"; lanza [ConversionException] si no lo es.
+(int, int) _ipYPrefijo(String red) {
+  final p = red.split('/');
+  final ip = _parseIp(p.first);
+  final pre = p.length == 2 ? _prefijoValido(p[1]) : null;
+  if (ip == null || pre == null) {
+    throw ConversionException('Red inválida: "$red" (usa a.b.c.d/n).');
+  }
+  return (ip, pre);
+}
+
+/// Primera y última dirección de la red "a.b.c.d/n"; la IP debe ser la
+/// dirección de red.
+(int, int) rangoDeRed(String red) {
+  final t = red.trim();
+  final (ip, pre) = _ipYPrefijo(t);
+  final tam = _pow2(32 - pre);
+  final ini = ip - ip % tam;
+  if (ini != ip) {
+    throw ConversionException(
+        '"$t" no es una dirección de red (¿quisiste ${_ipTexto(ini)}/$pre?).');
+  }
+  return (ini, ini + tam - 1);
+}
+
+/// Prefijo más largo en el que [ini] y [fin] comparten la red (en /0 siempre
+/// la comparten: ambos son menores que 2^32).
+int _prefijoComun((int, int) extremos) {
+  final (ini, fin) = extremos;
+  var n = 32;
+  while (ini ~/ _pow2(32 - n) != fin ~/ _pow2(32 - n)) {
+    n--;
+  }
+  return n;
+}
+
+/// [rangos] ordenados por inicio: alguno empieza antes de que termine el
+/// anterior.
+bool _solapan(List<(int, int)> rangos) {
+  for (var i = 1; i < rangos.length; i++) {
+    if (rangos[i].$1 <= rangos[i - 1].$2) return true;
+  }
+  return false;
+}
+
+/// Datos de una sumarización ya calculada, para escribir sus pasos.
+class _Sumario {
+  _Sumario(List<(int, int)> rangos)
+      : minIni = rangos.first.$1,
+        maxFin = rangos.map((r) => r.$2).reduce(max),
+        total = rangos.fold(0, (s, r) => s + r.$2 - r.$1 + 1),
+        solapan = _solapan(rangos) {
+    n = _prefijoComun((minIni, maxFin));
+  }
+
+  final int minIni;
+  final int maxFin;
+  final int total;
+  final bool solapan;
+  late final int n;
+
+  int get bloque => _pow2(32 - n);
+  int get red => minIni - minIni % bloque;
+  bool get exacta => !solapan && total == bloque;
+
+  List<String> get pasos => <String>[
+        '1. Rango que cubren las redes: ${_ipTexto(minIni)} a ${_ipTexto(maxFin)}.',
+        '2. Se busca el prefijo más largo en el que la primera y la última '
+            'dirección comparten la red: /$n.',
+        '3. La ruta resumen es ${_ipTexto(red)}/$n (máscara ${mascaraDePrefijo(n)}), '
+            'que abarca $bloque direcciones.',
+        _cierre,
+      ];
+
+  String get _cierre {
+    if (solapan) return '4. Aviso: algunas redes se solapan entre sí.';
+    if (exacta) {
+      return '4. Las redes suman exactamente $bloque direcciones: el resumen es exacto.';
+    }
+    return '4. Las redes suman $total y el resumen abarca $bloque: sobran '
+        '${bloque - total} direcciones que no pertenecen a ninguna de ellas.';
+  }
+}
+
 /// Sumariza una lista de redes IPv4 en formato "a.b.c.d/n" en la ruta resumen
 /// más específica que las cubre a todas.
 ResultadoSumarizacion sumarizarRedes(List<String> redes) {
   if (redes.length < 2) {
     throw const ConversionException('Escribe al menos 2 redes para sumarizar.');
   }
-  final inicios = <int>[];
-  final finales = <int>[];
-  var total = 0;
-  for (final r in redes) {
-    final p = r.trim().split('/');
-    final ip = p.length == 2 ? _parseIp(p[0]) : null;
-    final pre = p.length == 2 ? int.tryParse(p[1]) : null;
-    if (ip == null || pre == null || pre < 0 || pre > 32) {
-      throw ConversionException('Red inválida: "${r.trim()}" (usa a.b.c.d/n).');
-    }
-    final tam = _pow2(32 - pre);
-    final ini = ip - ip % tam;
-    if (ini != ip) {
-      throw ConversionException(
-          '"${r.trim()}" no es una dirección de red (¿quisiste ${_ipTexto(ini)}/$pre?).');
-    }
-    inicios.add(ini);
-    finales.add(ini + tam - 1);
-    total += tam;
-  }
-  var minIni = inicios.first;
-  var maxFin = finales.first;
-  for (var i = 1; i < inicios.length; i++) {
-    if (inicios[i] < minIni) minIni = inicios[i];
-    if (finales[i] > maxFin) maxFin = finales[i];
-  }
-  var n = 32;
-  while (n > 0 && minIni ~/ _pow2(32 - n) != maxFin ~/ _pow2(32 - n)) {
-    n--;
-  }
-  final bloque = _pow2(32 - n);
-  final red = minIni - minIni % bloque;
-  // Solapes: se ordena y se compara cada rango con el siguiente.
-  final orden = List<int>.generate(inicios.length, (i) => i)
-    ..sort((a, b) => inicios[a].compareTo(inicios[b]));
-  var solapan = false;
-  for (var i = 1; i < orden.length; i++) {
-    if (inicios[orden[i]] <= finales[orden[i - 1]]) solapan = true;
-  }
-  final exacta = !solapan && total == bloque;
+  final s = _Sumario(
+    redes.map(rangoDeRed).toList()..sort((a, b) => a.$1.compareTo(b.$1)),
+  );
   return ResultadoSumarizacion(
-    red: _ipTexto(red),
-    prefijo: n,
-    mascara: mascaraDePrefijo(n),
-    exacta: exacta,
-    direccionesSobrantes: solapan ? 0 : bloque - total,
-    pasos: <String>[
-      '1. Rango que cubren las redes: ${_ipTexto(minIni)} a ${_ipTexto(maxFin)}.',
-      '2. Se busca el prefijo más largo en el que la primera y la última '
-          'dirección comparten la red: /$n.',
-      '3. La ruta resumen es ${_ipTexto(red)}/$n (máscara ${mascaraDePrefijo(n)}), '
-          'que abarca $bloque direcciones.',
-      if (solapan)
-        '4. Aviso: algunas redes se solapan entre sí.'
-      else if (exacta)
-        '4. Las redes suman exactamente $bloque direcciones: el resumen es exacto.'
-      else
-        '4. Las redes suman $total y el resumen abarca $bloque: sobran '
-            '${bloque - total} direcciones que no pertenecen a ninguna de ellas.',
-    ],
+    red: _ipTexto(s.red),
+    prefijo: s.n,
+    mascara: mascaraDePrefijo(s.n),
+    exacta: s.exacta,
+    direccionesSobrantes: s.solapan ? 0 : s.bloque - s.total,
+    pasos: s.pasos,
   );
 }

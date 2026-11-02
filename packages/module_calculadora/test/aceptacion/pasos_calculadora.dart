@@ -96,6 +96,24 @@ final Map<LineMapper, StepFunction<void>> pasosCalculadora = {
     await probador.enterText(find.byType(TextField).first, ctx.arg<String>(0));
     await probador.pumpAndSettle();
   },
+  'la pestaña "Conversión" con las redes "{r}"'.mapper(): (_, ctx) async {
+    await _abrir('Conversión');
+    await probador.enterText(
+      find.widgetWithText(TextField, 'Una red por línea (a.b.c.d/n)'),
+      ctx.arg<String>(0),
+    );
+    await probador.pumpAndSettle();
+  },
+  'escribo el siguiente salto "{ip}"'.mapper(): (_, ctx) async {
+    await probador.enterText(
+      find.widgetWithText(TextField, 'Siguiente salto (opcional)'),
+      ctx.arg<String>(0),
+    );
+    await probador.pumpAndSettle();
+  },
+  'veo el error "{t}"'.mapper(): (_, ctx) async {
+    expect(find.text(ctx.arg<String>(0)), findsOneWidget);
+  },
   'la pestaña "VLSM" con las redes de ejemplo'.mapper(): (_, ctx) async {
     await _abrir('VLSM');
   },
