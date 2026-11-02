@@ -24,7 +24,7 @@ puertas:
   # comando de tests falla de forma anomala. Placeholder por ahora;
   mutacion:
     {
-      comando: "dart pub global run mutation_test -q -b -r gate_dart_reglas.xml -f xunit -o reports/mutacion mutacion.xml",
+      comando: "dart --packages=C:/dev/gate/.dart_tool/package_config.json C:/dev/gate/bin/motor.dart --salida reports/mutacion/mutation-test.xunit.xml",
       formato: mutation-test-xunit,
       reporte: reports/mutacion/mutation-test.xunit.xml,
     }
