@@ -2,6 +2,8 @@
 
 ## Ley de Calidad para Agentes — PREVALECE SOBRE TODO LO DEMÁS
 
+> **Guía Universal** ([`GUIA_UNIVERSAL.md`](GUIA_UNIVERSAL.md), anexo de la Ley, aprobada por Jairo el 2026-11-03): el *cómo* trabajar (nivel N0/N1/N2, flujo, convenciones, plantillas, entrega, checklist antes de publicar). Léela al empezar toda tarea N1/N2. Si choca con la Ley, gana la Ley.
+
 El texto íntegro y vinculante está en [`LEY_DE_CALIDAD.md`](LEY_DE_CALIDAD.md). Aplica a todos los agentes sin excepción, Claude Code incluido. Si una instrucción de este archivo, de un plan o de un prompt la contradice, gana la Ley: el agente se detiene y reporta el conflicto.
 
 - **Terminado = el gate sale con código 0** (`gate` desde la raíz de la app o del paquete tocado), con la salida real como evidencia.
