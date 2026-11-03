@@ -8,87 +8,11 @@ import 'dart:math';
 import 'and_ipv4.dart';
 import 'clasificacion_ipv4.dart';
 import 'conversiones.dart';
+import 'ejercicio.dart';
 import 'ipv4_subnetting.dart';
 import 'ipv6.dart';
 
-/// Tipos de ejercicio disponibles.
-enum TipoEjercicio {
-  dividirSubredes('Dividir en subredes'),
-  hostsPorPrefijo('Hosts, máscara y wildcard'),
-  vlsm('VLSM'),
-  redDeIp('Red y broadcast de una IP'),
-  clasificar('Clase y tipo de una IP'),
-  asignable('¿Se puede asignar?'),
-  ipv6Abreviar('IPv6: abreviar'),
-  ipv6Eui64('IPv6: EUI-64');
-
-  const TipoEjercicio(this.titulo);
-  final String titulo;
-}
-
-/// Una pregunta con su respuesta correcta.
-class CampoRespuesta {
-  const CampoRespuesta(this.etiqueta, this.correcta, {this.ayuda = ''});
-
-  final String etiqueta;
-  final String correcta;
-
-  /// Formato esperado (p. ej. "/28" o "192.168.1.16").
-  final String ayuda;
-}
-
-class Ejercicio {
-  const Ejercicio({
-    required this.tipo,
-    required this.enunciado,
-    required this.campos,
-    required this.pasos,
-  });
-
-  final TipoEjercicio tipo;
-  final String enunciado;
-  final List<CampoRespuesta> campos;
-
-  /// Procedimiento resuelto, para mostrar después de corregir.
-  final List<String> pasos;
-}
-
-/// Resultado de corregir un campo.
-class ResultadoCampo {
-  const ResultadoCampo(this.campo, this.respuesta, this.acierto);
-  final CampoRespuesta campo;
-  final String respuesta;
-  final bool acierto;
-}
-
-const _sinTilde = {'á': 'a', 'é': 'e', 'í': 'i', 'ó': 'o', 'ú': 'u'};
-
-/// Sin espacios, en minúsculas y sin tildes ("Pública" = "publica").
-String _norm(String s) => s
-    .trim()
-    .toLowerCase()
-    .replaceAll(RegExp(r'\s+'), '')
-    .replaceAllMapped(RegExp('[áéíóú]'), (m) => _sinTilde[m[0]]!);
-
-/// Compara ignorando espacios, mayúsculas y la barra inicial de un prefijo
-/// ("/28" y "28" cuentan igual).
-bool _iguales(String correcta, String dada) {
-  var a = _norm(correcta);
-  var b = _norm(dada);
-  if (a.startsWith('/') && !b.startsWith('/')) b = '/$b';
-  if (b.isEmpty) return false;
-  return a == b;
-}
-
-/// Corrige [respuestas] (una por campo, en orden).
-List<ResultadoCampo> corregir(Ejercicio e, List<String> respuestas) => [
-      for (var i = 0; i < e.campos.length; i++)
-        ResultadoCampo(
-          e.campos[i],
-          i < respuestas.length ? respuestas[i] : '',
-          _iguales(e.campos[i].correcta, i < respuestas.length ? respuestas[i] : ''),
-        ),
-    ];
+export 'ejercicio.dart';
 
 T _elige<T>(Random r, List<T> l) => l[r.nextInt(l.length)];
 
@@ -290,6 +214,12 @@ const _respuestaTipo = <TipoIpv4, String>{
   TipoIpv4.reservada: 'reservada',
 };
 
+/// Otras respuestas válidas por tipo: en clase la 240.x se llama también
+/// "reservada".
+const _alternativasTipo = <TipoIpv4, List<String>>{
+  TipoIpv4.experimental: <String>['reservada'],
+};
+
 /// Clase (letra) y tipo de [ip] (Clase 14).
 Ejercicio ejercicioClasificar(String ip) {
   final c = clasificarIpv4(ip)!;
@@ -300,7 +230,8 @@ Ejercicio ejercicioClasificar(String ip) {
       CampoRespuesta('Clase', c.clase.letra, ayuda: 'A, B, C, D o E'),
       CampoRespuesta('Tipo', _respuestaTipo[c.tipo]!,
           ayuda: 'publica, privada, loopback, apipa, multicast, '
-              'experimental o broadcast'),
+              'experimental (reservada) o broadcast',
+          alternativas: _alternativasTipo[c.tipo] ?? const <String>[]),
     ],
     pasos: <String>[c.explicacion],
   );

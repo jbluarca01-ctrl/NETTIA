@@ -51,6 +51,10 @@ final _pasos = StepRegistry<void>.fromMap({
   'todo está correcto'.mapper(): (_, ctx) async {
     expect(_correccion.every((r) => r.acierto), isTrue);
   },
+  'el tipo está mal'.mapper(): (_, ctx) async {
+    final tipo = _correccion.singleWhere((r) => r.campo.etiqueta == 'Tipo');
+    expect(tipo.acierto, isFalse);
+  },
   'la pestaña "Práctica"'.mapper(): (_, ctx) async {
     await probador.pumpWidget(
       MaterialApp(
