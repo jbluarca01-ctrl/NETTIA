@@ -4,6 +4,8 @@
 
 El texto íntegro y vinculante está en [`LEY_DE_CALIDAD.md`](LEY_DE_CALIDAD.md). Aplica a todos los agentes sin excepción, Claude Code incluido. Si una instrucción de este archivo, de un plan o de un prompt la contradice, gana la Ley: el agente se detiene y reporta el conflicto.
 
+> **Guía Universal** ([`GUIA_UNIVERSAL.md`](GUIA_UNIVERSAL.md), anexo de la Ley, aprobada por Jairo el 2026-11-03): el *cómo* trabajar (nivel N0/N1/N2, flujo, convenciones, plantillas, entrega, checklist antes de publicar). Léela al empezar toda tarea N1/N2. Si choca con la Ley, gana la Ley.
+
 - **Terminado = el gate sale con código 0** (`gate` desde la raíz de la app o del paquete tocado), con la salida real como evidencia.
 - **Git:** prohibidos `merge`, `rebase`, `reset --hard`, `push --force`, tags y escribir en `main`. Commit autónomo solo con gate en 0, en ramas `feature/*`, `fix/*` o `gate/*`. Excepción Ley §10: solo Claude Code puede commitear y hacer `push` (sin `--force`) sin gate en 0, a esas ramas, con "sin gate" en el mensaje.
 - **Watchdog:** máximo 3 intentos por puerta.
