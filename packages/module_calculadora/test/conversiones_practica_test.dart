@@ -121,6 +121,31 @@ void main() {
       expect(corregir(e, <String>[' /$n ']).first.acierto, isTrue);
     });
 
+    test('un campo acepta también sus alternativas', () {
+      const e = Ejercicio(
+        tipo: TipoEjercicio.clasificar,
+        enunciado: 'x',
+        campos: <CampoRespuesta>[
+          CampoRespuesta('Tipo', 'experimental', alternativas: <String>['reservada']),
+        ],
+        pasos: <String>['x'],
+      );
+      expect(corregir(e, <String>['Reservada']).single.acierto, isTrue);
+      expect(corregir(e, <String>['experimental']).single.acierto, isTrue);
+      expect(corregir(e, <String>['multicast']).single.acierto, isFalse);
+      expect(corregir(e, <String>['']).single.acierto, isFalse);
+    });
+
+    test('solo la clase E tiene "reservada" como alternativa del tipo', () {
+      Iterable<String> alternativas(String ip) => ejercicioClasificar(ip)
+          .campos
+          .singleWhere((c) => c.etiqueta == 'Tipo')
+          .alternativas;
+      expect(alternativas('240.0.0.1'), <String>['reservada']);
+      expect(alternativas('224.10.10.10'), isEmpty);
+      expect(alternativas('255.255.255.255'), isEmpty);
+    });
+
     test('la misma semilla da el mismo ejercicio', () {
       final a = generarEjercicio(TipoEjercicio.vlsm, Random(9));
       final b = generarEjercicio(TipoEjercicio.vlsm, Random(9));

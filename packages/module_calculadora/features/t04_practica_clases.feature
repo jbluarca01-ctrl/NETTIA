@@ -43,6 +43,21 @@ Feature: Ejercicios de práctica de las Clases 13 a 17
     When respondo "a" y "Pública"
     Then todo está correcto
 
+  Scenario Outline: La clase E acepta "reservada" como tipo (Clase 14)
+    Given el ejercicio de clasificar "240.0.0.1"
+    When respondo "E" y "<tipo>"
+    Then todo está correcto
+
+    Examples:
+      | tipo         |
+      | experimental |
+      | Reservada    |
+
+  Scenario: "reservada" no vale para una dirección que no es de clase E
+    Given el ejercicio de clasificar "224.10.10.10"
+    When respondo "D" y "reservada"
+    Then el tipo está mal
+
   Scenario Outline: ¿Se puede asignar a un host? (Clases 13 y 16)
     Given el ejercicio de asignar "<ip>"
     Then la respuesta de "¿Se puede asignar a un host? (si/no)" es "<resp>"
