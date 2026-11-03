@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:nettia_core/nettia_core.dart';
 
 import 'logic/conversiones.dart';
+import 'logic/resumen_cidr.dart';
 import 'widgets/resultado_widgets.dart';
 
 InputDecoration _dec(String etiqueta, {String? pista}) => InputDecoration(
@@ -30,6 +31,7 @@ class _ConversionTabState extends State<ConversionTab>
   final TextEditingController _redes = TextEditingController(
     text: '192.168.0.0/24\n192.168.1.0/24\n192.168.2.0/24\n192.168.3.0/24',
   );
+  final TextEditingController _salto = TextEditingController();
 
   @override
   bool get wantKeepAlive => true;
@@ -39,6 +41,7 @@ class _ConversionTabState extends State<ConversionTab>
     _mascara.dispose();
     _numero.dispose();
     _redes.dispose();
+    _salto.dispose();
     super.dispose();
   }
 
@@ -77,6 +80,34 @@ class _ConversionTabState extends State<ConversionTab>
     }
   }
 
+  /// Fila "Comando:" con la ruta estática resumen, o el error del salto.
+  Widget _comando(ResultadoSumarizacion r) {
+    try {
+      return FilaDato('Comando:', comandoResumen(r, _salto.text));
+    } on ConversionException catch (e) {
+      return MensajeError(e.mensaje);
+    }
+  }
+
+  Widget _campoSalto() => TextField(
+        controller: _salto,
+        style: _mono,
+        decoration: _dec('Siguiente salto (opcional)', pista: '10.0.0.2'),
+        onChanged: (_) => setState(() {}),
+      );
+
+  /// Las cinco preguntas de la Clase 18, siempre a la vista.
+  List<Widget> _preguntas(List<String> preguntas) => <Widget>[
+        const SizedBox(height: 10),
+        const Text('Antes de anunciar, las 5 preguntas:',
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+        for (final p in preguntas)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(p, style: const TextStyle(fontSize: 12.5)),
+          ),
+      ];
+
   Widget _bloqueSumarizacion() {
     final lineas = _redes.text
         .split(RegExp(r'[\n,;]'))
@@ -84,14 +115,20 @@ class _ConversionTabState extends State<ConversionTab>
         .where((l) => l.isNotEmpty)
         .toList();
     try {
-      final r = sumarizarRedes(lineas);
+      final v = revisarResumen(lineas);
+      final r = v.resumen;
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
+          _campoSalto(),
           const Divider(),
           FilaDato('Ruta resumen:', '${r.red}/${r.prefijo}'),
           FilaDato('Máscara:', r.mascara),
+          FilaDato('Rango cubierto:', v.cubierto),
           FilaDato('¿Resumen exacto?', r.exacta ? 'Sí' : 'No (sobran ${r.direccionesSobrantes})'),
+          FilaDato('Veredicto:', v.textoVeredicto),
+          _comando(r),
+          ..._preguntas(v.preguntas),
           const SizedBox(height: 6),
           PasosYAvisos(pasos: r.pasos),
         ],
