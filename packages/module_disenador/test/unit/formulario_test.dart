@@ -176,4 +176,44 @@ void main() {
       expect(d.plan.segmentos.single.hostsPedidos, 6);
     });
   });
+  group('varios routers (SPEC-003 T3)', () {
+    const sede2 = [EntradaSede('192.168.20.0/24', [('A', '20')])];
+
+    test('en capa 3 con varios routers la sede 1 conserva sus switches', () {
+      final d = disenar(
+        const EntradaDiseno(
+          redBase: '192.168.10.0/24',
+          segmentos: [('A', ['50', '0']), ('B', ['0', '20'])],
+          topologia: Topologia.switchCapa3,
+          switches: 2,
+          sedesExtra: sede2,
+          redEnlaces: '10.0.0.0/30',
+        ),
+      );
+      expect([for (final e in d.equipos) e.hostname], ['SW1', 'SW2', 'R1', 'SW3', 'R2']);
+    });
+
+    test('cada equipo se audita contra el plan de su sede', () {
+      final d = disenar(
+        const EntradaDiseno(
+          redBase: '192.168.10.0/24',
+          segmentos: [('A', ['50'])],
+          sedesExtra: sede2,
+          redEnlaces: '10.0.0.0/30',
+        ),
+      );
+      expect(d.sedeDe, {'SW1': 0, 'R1': 0, 'SW2': 1, 'R2': 1});
+      expect(d.planPara('enable\nhostname R1\n').redBase, '192.168.10.0');
+      expect(d.planPara('  hostname SW2  ').redBase, '192.168.20.0');
+      expect(d.planPara('hostname OTRO').redBase, '192.168.10.0');
+    });
+
+    test('sin sedes extra no hay red multisede', () {
+      final d = disenar(const EntradaDiseno(redBase: '192.168.10.0/24', segmentos: [('A', ['50'])]));
+      expect(d.red, isNull);
+      expect(d.sedeDe, isEmpty);
+      expect(const EntradaDiseno(redBase: '', segmentos: []).redEnlaces, isNull);
+      expect(const EntradaDiseno(redBase: '', segmentos: []).enrutamiento, Enrutamiento.estaticaResumida);
+    });
+  });
 }

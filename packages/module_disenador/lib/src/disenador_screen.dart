@@ -4,7 +4,9 @@ import 'logic/auditor.dart';
 import 'logic/formulario.dart';
 import 'logic/generador.dart';
 import 'logic/plan_red.dart';
+import 'campos.dart';
 import 'repara_tab.dart';
+import 'sede_extra.dart';
 import 'vistas_resultado.dart';
 
 /// Pantalla del Diseñador de red: en "Datos" se escriben los requisitos y al
@@ -47,6 +49,12 @@ class _DisenadorScreenState extends State<DisenadorScreen>
   int _switches = 1;
   Conexion _conexion = Conexion.alRouter;
   bool _gatewayAlFinal = false;
+  // Red con varios routers (SPEC-003 T4): las sedes 2… nacen al elegir más
+  // routers y se liberan al elegir menos o al cerrar la pantalla.
+  int _routers = 1;
+  final List<SedeExtra> _sedes = [];
+  final _enlaces = TextEditingController();
+  Enrutamiento _enrutamiento = Enrutamiento.estaticaResumida;
   Diseno? _diseno;
   String? _error;
   final _auditoria = TextEditingController();
@@ -55,6 +63,7 @@ class _DisenadorScreenState extends State<DisenadorScreen>
   List<Hallazgo>? _hallazgos;
 
   static const int _maxSwitches = 3;
+  static const int _maxRouters = 6;
 
   static _Fila _fila(String nombre, String hosts) => (
     TextEditingController(text: nombre),
@@ -65,7 +74,7 @@ class _DisenadorScreenState extends State<DisenadorScreen>
   );
 
   /// Switches que se piden: en capa 3 siempre uno.
-  int get _n => _topologia == Topologia.switchCapa3 ? 1 : _switches;
+  int get _n => _routers == 1 && _topologia == Topologia.switchCapa3 ? 1 : _switches;
 
   static void _liberar(_Fila f) {
     f.$1.dispose();
@@ -84,10 +93,14 @@ class _DisenadorScreenState extends State<DisenadorScreen>
       _dominio,
       _clave,
       _auditoria,
+      _enlaces,
     ]) {
       c.dispose();
     }
     _filas.forEach(_liberar);
+    for (final s in _sedes) {
+      s.liberar();
+    }
     _tabs.dispose();
     super.dispose();
   }
@@ -123,7 +136,23 @@ class _DisenadorScreenState extends State<DisenadorScreen>
     clave: _clave.text,
     switches: _switches,
     conexion: _conexion,
+    sedesExtra: [for (final s in _sedes) s.entrada],
+    redEnlaces: _enlaces.text,
+    enrutamiento: _enrutamiento,
   );
+
+  /// Deja [n] routers: agrega o quita sedes 2…; las quitadas se liberan
+  /// después del cuadro en que dejan de usarse.
+  void _elegirRouters(int n) {
+    _routers = n;
+    final quitadas = [for (final s in _sedes) if (s.numero > n) s];
+    _sedes
+      ..removeWhere(quitadas.contains)
+      ..addAll([for (var k = _sedes.length + 2; k <= n; k++) SedeExtra(k)]);
+    WidgetsBinding.instance.addPostFrameCallback((_) => quitadas.forEach(_liberarSede));
+  }
+
+  static void _liberarSede(SedeExtra s) => s.liberar();
 
   void _agregar() => setState(() => _filas.add(_fila('', '')));
 
@@ -170,28 +199,14 @@ class _DisenadorScreenState extends State<DisenadorScreen>
     return ListView(
       padding: const EdgeInsets.all(_hueco),
       children: [
+        Text('Routers', style: tema.textTheme.titleSmall),
+        _selector<int>(_routers, {for (var n = 1; n <= _maxRouters; n++) n: '$n'}, _elegirRouters),
+        if (_routers > 1) Text('Sede 1 (R1)', style: tema.textTheme.titleMedium),
         _campo(_red, 'Red base'),
         ..._equipos(tema),
-        Text(
-          _n == 1
-              ? 'Segmentos: nombre y hosts'
-              : 'Segmentos: nombre y PC por switch',
-          style: tema.textTheme.titleSmall,
-        ),
-        Text(
-          'En la configuración los espacios pasan a _ (Sala de reuniones → '
-          'SALA_DE_REUNIONES): es lo que acepta un switch real.',
-          style: tema.textTheme.bodySmall,
-        ),
-        for (var i = 0; i < _filas.length; i++) _filaSegmento(i),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: TextButton.icon(
-            onPressed: _agregar,
-            icon: const Icon(Icons.add),
-            label: const Text('Agregar segmento'),
-          ),
-        ),
+        ..._segmentos(tema),
+        for (final s in _sedes) TarjetaSede(s, key: ObjectKey(s)),
+        if (_routers > 1) ..._enrutamientoEntreSedes(tema),
         ..._opciones(),
         FilledButton(onPressed: _disenar, child: const Text('Diseñar')),
         if (_error case final error?)
@@ -203,58 +218,81 @@ class _DisenadorScreenState extends State<DisenadorScreen>
     );
   }
 
-  Widget _campo(TextEditingController c, String etiqueta, {Key? key}) =>
+  /// Los segmentos de la sede 1 (la única con un router).
+  List<Widget> _segmentos(ThemeData tema) => [
+    Text(
+      _n == 1
+          ? 'Segmentos: nombre y hosts'
+          : 'Segmentos: nombre y PC por switch',
+      style: tema.textTheme.titleSmall,
+    ),
+    Text(
+      'En la configuración los espacios pasan a _ (Sala de reuniones → '
+      'SALA_DE_REUNIONES): es lo que acepta un switch real.',
+      style: tema.textTheme.bodySmall,
+    ),
+    for (var i = 0; i < _filas.length; i++) _filaSegmento(i),
+    botonAgregar('Agregar segmento', _agregar),
+  ];
+
+  /// Con varios routers (SPEC-003 T4): la red de los enlaces (sin valor
+  /// por defecto) y cómo se enrutan las sedes.
+  List<Widget> _enrutamientoEntreSedes(ThemeData tema) => [
+    _campo(_enlaces, 'Red de enlaces entre routers', key: const ValueKey('red_enlaces'), pista: '0.0.0.0/0'),
+    Text('Enrutamiento', style: tema.textTheme.titleSmall),
+    _selector<Enrutamiento>(_enrutamiento, {
+      for (final e in Enrutamiento.values) e: nombreEnrutamiento(e),
+    }, (v) => _enrutamiento = v),
+    if (_routers > 2)
       Padding(
         padding: const EdgeInsets.only(bottom: _hueco),
-        child: TextField(
-          key: key,
-          controller: c,
-          decoration: InputDecoration(labelText: etiqueta),
+        child: Text(
+          'Los routers del medio usan GigabitEthernet0/0/2 para el segundo enlace: '
+          'si tu router no la trae, agrégale el módulo en Packet Tracer.',
+          style: tema.textTheme.bodySmall,
         ),
-      );
+      ),
+  ];
+
+  Widget _campo(TextEditingController c, String etiqueta, {Key? key, String? pista}) =>
+      campoTexto(c, etiqueta, key: key, pista: pista);
 
   Widget _filaSegmento(int i) {
     final (nombre, hosts) = _filas[i];
     final n = i + 1;
-    return Row(
-      key: ObjectKey(nombre),
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
+    return filaConQuitar(ObjectKey(nombre), [
+      Expanded(
+        child: _campo(nombre, 'Nombre', key: ValueKey('segmento_nombre_$n')),
+      ),
+      for (var j = 0; j < _n; j++)
         Expanded(
-          child: _campo(nombre, 'Nombre', key: ValueKey('segmento_nombre_$n')),
-        ),
-        for (var j = 0; j < _n; j++)
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(left: _hueco),
-              child: _campo(
-                hosts[j],
-                _n == 1 ? 'Hosts' : 'SW${j + 1}',
-                key: ValueKey(
-                  j == 0
-                      ? 'segmento_hosts_$n'
-                      : 'segmento_hosts_${n}_sw${j + 1}',
-                ),
+          child: Padding(
+            padding: const EdgeInsets.only(left: _hueco),
+            child: _campo(
+              hosts[j],
+              _n == 1 ? 'Hosts' : 'SW${j + 1}',
+              key: ValueKey(
+                j == 0
+                    ? 'segmento_hosts_$n'
+                    : 'segmento_hosts_${n}_sw${j + 1}',
               ),
             ),
           ),
-        IconButton(
-          tooltip: 'Quitar segmento $n',
-          icon: const Icon(Icons.remove_circle_outline),
-          onPressed: () => _quitar(i),
         ),
-      ],
-    );
+    ], 'Quitar segmento $n', () => _quitar(i));
   }
 
   /// Topología y, en router-on-a-stick, cuántos switches y cómo se conectan.
   List<Widget> _equipos(ThemeData tema) => [
-    Text('Topología', style: tema.textTheme.titleSmall),
-    _selector<Topologia>(_topologia, const {
-      Topologia.routerOnAStick: 'Router-on-a-stick',
-      Topologia.switchCapa3: 'Switch capa 3',
-    }, (v) => _topologia = v),
-    if (_topologia == Topologia.routerOnAStick) ...[
+    // Con varios routers cada sede es router-on-a-stick.
+    if (_routers == 1) ...[
+      Text('Topología', style: tema.textTheme.titleSmall),
+      _selector<Topologia>(_topologia, const {
+        Topologia.routerOnAStick: 'Router-on-a-stick',
+        Topologia.switchCapa3: 'Switch capa 3',
+      }, (v) => _topologia = v),
+    ],
+    if (_routers > 1 || _topologia == Topologia.routerOnAStick) ...[
       Text('Switches', style: tema.textTheme.titleSmall),
       _selector<int>(_switches, const {
         1: '1 switch',

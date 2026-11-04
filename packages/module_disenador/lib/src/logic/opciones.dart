@@ -32,6 +32,7 @@ class OpcionesConfig {
     this.switches = 1,
     this.conexion = Conexion.alRouter,
     this.pcPorSwitch = const {},
+    this.primerSwitch = 1,
   });
 
   final Topologia topologia;
@@ -52,4 +53,26 @@ class OpcionesConfig {
   /// PC de cada segmento (por nombre) en SW1, SW2…; la suma es igual a los
   /// hosts del segmento. Un segmento que no aparece tiene todo en SW1.
   final Map<String, List<int>> pcPorSwitch;
+
+  /// Número del primer switch (`SW<n>`, los siguientes en orden):
+  /// en una red con varios routers los switches se numeran por sede.
+  final int primerSwitch;
+
+  /// Estas opciones para la sede [k] (desde 1) de una red con varios
+  /// routers: router Rk, switches desde `SW<primerSwitch>` y router-on-a-stick.
+  OpcionesConfig paraSede(int k, int primerSwitch) => OpcionesConfig(
+    hostnameSwitch: 'SW$primerSwitch',
+    hostnameRouter: 'R$k',
+    troncalSwitch: troncalSwitch,
+    interfazRouter: interfazRouter,
+    prefijoAcceso: prefijoAcceso,
+    puertosAcceso: puertosAcceso,
+    dns: dns,
+    dominio: dominio,
+    enableSecret: enableSecret,
+    switches: switches,
+    conexion: conexion,
+    pcPorSwitch: pcPorSwitch,
+    primerSwitch: primerSwitch,
+  );
 }

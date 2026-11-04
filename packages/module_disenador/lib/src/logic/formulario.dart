@@ -2,8 +2,20 @@
 library;
 
 import 'generador.dart';
+import 'generador_multisede.dart';
+import 'multisede.dart';
 import 'plan_red.dart';
 import 'verificacion.dart';
+
+export 'multisede.dart' show Enrutamiento, RedMultisede;
+
+/// Una sede más (la 2, la 3…) de una red con varios routers: su red base y
+/// sus filas (nombre, hosts), con un switch (SPEC-003 T3).
+class EntradaSede {
+  const EntradaSede(this.redBase, this.segmentos);
+  final String redBase;
+  final List<(String, String)> segmentos;
+}
 
 /// Lo que se escribió en el formulario, tal cual.
 class EntradaDiseno {
@@ -19,6 +31,9 @@ class EntradaDiseno {
     this.clave = '',
     this.switches = 1,
     this.conexion = Conexion.alRouter,
+    this.sedesExtra = const [],
+    this.redEnlaces,
+    this.enrutamiento = Enrutamiento.estaticaResumida,
   });
 
   final String redBase;
@@ -36,21 +51,46 @@ class EntradaDiseno {
   /// Switches de acceso; en capa 3 siempre hay uno.
   final int switches;
   final Conexion conexion;
+
+  /// Sedes 2, 3…: con alguna, la red tiene un router por sede (SPEC-003).
+  final List<EntradaSede> sedesExtra;
+  /// `null`: no se escribió.
+  final String? redEnlaces;
+  final Enrutamiento enrutamiento;
 }
 
 /// Todo lo que sale de un diseño válido.
 class Diseno {
-  const Diseno(this.plan, this.equipos, this.verificacion);
+  const Diseno(this.plan, this.equipos, this.verificacion, {this.red, this.sedeDe = const {}});
+
+  /// El plan de la primera sede (la única si hay un solo router).
   final PlanRed plan;
   final List<ConfigEquipo> equipos;
   final List<PasoVerificacion> verificacion;
+
+  /// La red con varios routers; `null` con uno solo.
+  final RedMultisede? red;
+
+  /// Índice de la sede de cada equipo, por hostname (vacío con un router).
+  final Map<String, int> sedeDe;
+
+  /// El plan de la sede del equipo cuyo `hostname` aparece en [config]; si
+  /// no se reconoce (o hay un solo router), el de la primera sede.
+  PlanRed planPara(String config) {
+    const prefijo = 'hostname ';
+    final linea = config.split('\n').map((l) => l.trim()).where((l) => l.startsWith(prefijo)).firstOrNull;
+    final i = linea == null ? null : sedeDe[linea.substring(prefijo.length)];
+    return i == null ? plan : red!.sedes[i];
+  }
 }
 
 /// Diseña la red de [e]. Lanza [DisenoException] con un mensaje para
 /// mostrar si algo de lo escrito no sirve.
 Diseno disenar(EntradaDiseno e) {
+  final multisede = e.sedesExtra.isNotEmpty;
+  final topologia = multisede ? Topologia.routerOnAStick : e.topologia;
   final (red, cidr) = leerRedBase(e.redBase);
-  final switches = e.topologia == Topologia.switchCapa3 ? 1 : e.switches;
+  final switches = topologia == Topologia.switchCapa3 ? 1 : e.switches;
   final plan = planificarRed(
     red,
     cidr,
@@ -62,7 +102,7 @@ Diseno disenar(EntradaDiseno e) {
     ),
   );
   final o = OpcionesConfig(
-    topologia: e.topologia,
+    topologia: topologia,
     dns: e.dns.trim(),
     dominio: e.dominio.trim(),
     enableSecret: e.clave.trim(),
@@ -70,7 +110,45 @@ Diseno disenar(EntradaDiseno e) {
     conexion: e.conexion,
     pcPorSwitch: leerReparto(e.segmentos, switches),
   );
+  if (multisede) return _disenarMultisede(e, plan, o);
   return Diseno(plan, generarConfiguracion(plan, o), planVerificacion(plan, o));
+}
+
+/// Red con un router por sede: la primera con [plan] y [o]; las demás con un
+/// switch y las mismas opciones de plan, DNS, dominio y clave.
+Diseno _disenarMultisede(EntradaDiseno e, PlanRed plan, OpcionesConfig o) {
+  final planes = [
+    plan,
+    for (var k = 0; k < e.sedesExtra.length; k++) _planSede(e.sedesExtra[k], k + 2, plan.opciones),
+  ];
+  final opciones = [
+    o,
+    for (final _ in e.sedesExtra) OpcionesConfig(dns: o.dns, dominio: o.dominio, enableSecret: o.enableSecret),
+  ];
+  final red = planificarMultisede(planes, e.redEnlaces, e.enrutamiento);
+  final equipos = generarMultisede(red, opciones);
+  return Diseno(plan, equipos, verificacionMultisede(red, opciones), red: red, sedeDe: _sedeDe(equipos));
+}
+
+/// La sede [k] (desde 2); sus errores dicen de qué sede son.
+PlanRed _planSede(EntradaSede s, int k, OpcionesPlan opciones) {
+  try {
+    final (red, cidr) = leerRedBase(s.redBase);
+    return planificarRed(red, cidr, leerSegmentos([for (final (n, h) in s.segmentos) (n, [h])]), opciones);
+  } on DisenoException catch (e) {
+    throw DisenoException('Sede $k: ${e.mensaje}');
+  }
+}
+
+/// Sede de cada equipo: los switches y el router Rk que los cierra.
+Map<String, int> _sedeDe(List<ConfigEquipo> equipos) {
+  final sedes = <String, int>{};
+  var k = 0;
+  for (final c in equipos) {
+    sedes[c.hostname] = k;
+    if (c.hostname == 'R${k + 1}') k++;
+  }
+  return sedes;
 }
 
 /// Red base "192.168.10.0/24" → ("192.168.10.0", 24).

@@ -7,6 +7,7 @@ import 'package:nettia_core/nettia_core.dart';
 import 'logic/auditor.dart';
 import 'logic/formulario.dart';
 import 'logic/generador.dart';
+import 'logic/multisede.dart';
 import 'logic/plan_red.dart';
 
 const double _hueco = 12;
@@ -40,13 +41,45 @@ class VistaPlan extends StatelessWidget {
           'direcciones y no caben en un /29 (6 útiles), por eso salen en un /28.',
         ),
       ),
-      for (final s in d.plan.segmentos) _TarjetaSegmento(s),
-      Text(
-        'Quedan ${d.plan.direccionesLibres} direcciones libres en la red base.',
-      ),
-      for (final aviso in d.plan.avisos) Text(aviso),
+      if (d.red case final red?) ..._planMultisede(context, red) else ..._planSede(d.plan),
     ],
   );
+}
+
+/// Los segmentos de una sede y lo que queda libre en su red base.
+List<Widget> _planSede(PlanRed p) => [
+  for (final s in p.segmentos) _TarjetaSegmento(s),
+  Text('Quedan ${p.direccionesLibres} direcciones libres en la red base.'),
+  for (final aviso in p.avisos) Text(aviso),
+];
+
+/// Nombre del [e] en pantalla (SPEC-003 T4).
+String nombreEnrutamiento(Enrutamiento e) => switch (e) {
+  Enrutamiento.estaticaResumida => 'Estática resumida',
+  Enrutamiento.estaticaPorSubred => 'Estática por subred',
+  Enrutamiento.ospf => 'OSPF',
+};
+
+/// Con varios routers (SPEC-003 RF15): el plan de cada sede con su
+/// resumen, los enlaces entre routers y el enrutamiento.
+List<Widget> _planMultisede(BuildContext context, RedMultisede red) {
+  final titulo = Theme.of(context).textTheme.titleMedium;
+  return [
+    for (var i = 0; i < red.sedes.length; i++) ...[
+      Text(_tituloSede(red, i), style: titulo),
+      ..._planSede(red.sedes[i]),
+      const SizedBox(height: _hueco),
+    ],
+    Text('Enlaces entre routers', style: titulo),
+    for (final e in red.enlaces) Text('R${e.desde + 1} ${e.ipDesde} ↔ R${e.desde + 2} ${e.ipHasta} · red ${e.red}/30'),
+    Text('Enrutamiento: ${nombreEnrutamiento(red.enrutamiento)}'),
+  ];
+}
+
+String _tituloSede(RedMultisede red, int i) {
+  final p = red.sedes[i];
+  final (resumen, prefijo) = resumenDe(p);
+  return 'Sede ${i + 1} (R${i + 1}) · ${p.redBase}/${p.cidrBase} · resumen $resumen/$prefijo';
 }
 
 class _TarjetaSegmento extends StatelessWidget {
@@ -188,7 +221,7 @@ class VistaAuditar extends StatelessWidget {
       ),
       const SizedBox(height: _hueco),
       FilledButton(
-        onPressed: () => onAuditar(d.plan),
+        onPressed: () => onAuditar(d.planPara(texto.text)),
         child: const Text('Auditar'),
       ),
       ..._resultado(),

@@ -67,6 +67,13 @@ List<String> _rangos(int n, int puertos, String prefijo) {
   ];
 }
 
+/// La interfaz [base] con su último número desplazado en [i]
+/// (`GigabitEthernet0/0/0`, 2 → `GigabitEthernet0/0/2`).
+String interfazDesplazada(String base, int i) {
+  final corte = base.lastIndexOf('/') + 1;
+  return '${base.substring(0, corte)}${int.parse(base.substring(corte)) + i}';
+}
+
 /// Reparte el [plan] entre los equipos. Lanza [DisenoException] si un switch
 /// queda sin PC o una VLAN repartida no puede llegar a su gateway.
 Fisica disenarFisica(PlanRed plan, OpcionesConfig o) {
@@ -98,7 +105,7 @@ class _Red {
     return i < l.length ? l[i] : 0;
   }
 
-  String _hostname(int i) => i == 0 ? o.hostnameSwitch : 'SW${i + 1}';
+  String _hostname(int i) => i == 0 ? o.hostnameSwitch : 'SW${o.primerSwitch + i}';
 
   bool _alRouter(int i) => o.conexion != Conexion.enCadena || i == 0;
 
@@ -171,18 +178,10 @@ class _Red {
     );
   }
 
-  /// Nombre de la interfaz del router hacia el switch [i]: la base con el
-  /// último número desplazado en [i].
-  String _interfazRouter(int i) {
-    final base = o.interfazRouter;
-    final corte = base.lastIndexOf('/') + 1;
-    return '${base.substring(0, corte)}${int.parse(base.substring(corte)) + i}';
-  }
-
   List<InterfazRouter> router() => [
     for (var i = 0; i < _n; i++)
       if (_alRouter(i))
-        InterfazRouter(_interfazRouter(i), [
+        InterfazRouter(interfazDesplazada(o.interfazRouter, i), [
           for (final s in plan.segmentos)
             if (_gateway(s) == i) s,
         ]),
