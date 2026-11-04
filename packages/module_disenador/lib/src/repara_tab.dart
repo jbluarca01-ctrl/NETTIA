@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:nettia_core/nettia_core.dart';
 
 import 'logic/repara.dart';
+import 'repara_nivel2.dart';
 import 'vistas_resultado.dart';
 
 const double _hueco = 12;
@@ -29,6 +30,9 @@ class _RepararTabState extends State<RepararTab> {
   int? _elegida;
   ResultadoRepara? _resultado;
   late bool _faltaElegir;
+  // Nivel elegido (SPEC-002 T2): se conserva entre ejercicios; se descarta
+  // al salir.
+  var _nivel = _Nivel.causa;
 
   void _nuevo() => setState(() {
     _ejercicio = widget.crear();
@@ -51,10 +55,29 @@ class _RepararTabState extends State<RepararTab> {
       children: [
         FilledButton(onPressed: _nuevo, child: const Text('Nuevo ejercicio')),
         const SizedBox(height: _hueco),
-        if (e == null) const Text('Toca Nuevo ejercicio para empezar.') else ..._ejercicioVisible(context, e),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final n in _Nivel.values)
+              ChoiceChip(
+                label: Text(_texto(n)),
+                selected: _nivel == n,
+                onSelected: (_) => setState(() => _nivel = n),
+              ),
+          ],
+        ),
+        if (e == null)
+          const Text('Toca Nuevo ejercicio para empezar.')
+        else if (_nivel == _Nivel.causa)
+          ..._ejercicioVisible(context, e)
+        else
+          ReparaNivel2(e, key: ObjectKey(e)),
       ],
     );
   }
+
+
 
   List<Widget> _ejercicioVisible(BuildContext context, EjercicioRepara e) {
     final titulo = Theme.of(context).textTheme.titleSmall;
@@ -94,3 +117,11 @@ class _RepararTabState extends State<RepararTab> {
     ];
   }
 }
+
+/// Niveles de la pestaña (SPEC-002 T2).
+enum _Nivel { causa, correccion }
+
+String _texto(_Nivel n) => switch (n) {
+  _Nivel.causa => 'Nivel 1: elegir la causa',
+  _Nivel.correccion => 'Nivel 2: escribir la corrección',
+};

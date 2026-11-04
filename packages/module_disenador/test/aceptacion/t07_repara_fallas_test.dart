@@ -1,6 +1,7 @@
 // Pasos de aceptación de t07_repara_fallas.feature (SPEC-001 T1).
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gherkart/gherkart.dart';
+import 'package:module_disenador/src/logic/aplicar.dart';
 import 'package:module_disenador/src/logic/auditor.dart';
 import 'package:module_disenador/src/logic/fallas.dart';
 import 'package:module_disenador/src/logic/generador.dart';
@@ -13,6 +14,8 @@ class _Mundo {
   List<ConfigEquipo>? configs;
   TipoFalla? falla;
   SegmentoPlan? segmento;
+  List<ConfigEquipo>? antes;
+  List<String> noReconocidos = const [];
 }
 
 var _m = _Mundo();
@@ -22,6 +25,30 @@ List<String> _hallazgos(String equipo) => [
 ];
 
 final _pasos = StepRegistry<void>.fromMap({
+  // SPEC-002 T1 (t10_repara_aplicar.feature).
+  'aplico a "{e}" los comandos "{c}"'.mapper(): (_, ctx) async {
+    _m.antes = _m.configs;
+    final equipo = ctx.arg<String>(0);
+    final viejo = _m.configs!.singleWhere((c) => c.hostname == equipo);
+    final r = aplicarComandos(viejo, ctx.arg<String>(1).split(';').join('\n'));
+    _m.noReconocidos = r.noReconocidos;
+    _m.configs = [for (final c in _m.configs!) c.hostname == equipo ? r.config : c];
+  },
+  'no quedó ningún comando sin reconocer'.mapper(): (_, ctx) async {
+    expect(_m.noReconocidos, isEmpty);
+  },
+  'no se reconocieron "{lista}"'.mapper(): (_, ctx) async {
+    expect(_m.noReconocidos, ctx.arg<String>(0).split(','));
+  },
+  'la configuración de "{e}" no cambió'.mapper(): (_, ctx) async {
+    String texto(List<ConfigEquipo> cs) => cs.singleWhere((c) => c.hostname == ctx.arg<String>(0)).texto;
+    expect(texto(_m.configs!), texto(_m.antes!));
+  },
+  'las últimas líneas de "{e}" son "{lista}"'.mapper(): (_, ctx) async {
+    final esperadas = ctx.arg<String>(1).split(';');
+    final lineas = _m.configs!.singleWhere((c) => c.hostname == ctx.arg<String>(0)).lineas;
+    expect([for (final l in lineas.skip(lineas.length - esperadas.length)) l.trim()], esperadas);
+  },
   'la red base "{red}" con los segmentos "{s}"'.mapper(): (_, ctx) async {
     final [red, cidr] = ctx.arg<String>(0).split('/');
     _m.plan = planificarRed(red, int.parse(cidr), [
@@ -59,4 +86,5 @@ final _pasos = StepRegistry<void>.fromMap({
 Future<void> main() async {
   setUp(() => _m = _Mundo());
   await correrFeature('t07_repara_fallas.feature', _pasos);
+  await correrFeature('t10_repara_aplicar.feature', _pasos);
 }

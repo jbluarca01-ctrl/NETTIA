@@ -9,6 +9,7 @@ import 'package:module_disenador/src/logic/fallas.dart';
 import 'package:module_disenador/src/logic/plan_red.dart';
 import 'package:module_disenador/src/logic/repara.dart';
 import 'package:module_disenador/src/repara_tab.dart';
+import 'package:module_disenador/src/vistas_resultado.dart';
 import 'package:nettia_core/nettia_core.dart';
 
 import 'comun.dart';
@@ -86,6 +87,25 @@ final _pasos = StepRegistry<void>.fromMap({
   'no veo el resultado'.mapper(): (_, ctx) async {
     expect(find.byKey(const ValueKey('repara_resultado')), findsNothing);
   },
+  // SPEC-002 T2 (t11_repara_nivel2.feature).
+  'elijo el nivel "{t}"'.mapper(): (_, ctx) async {
+    await _tocar(find.text(ctx.arg<String>(0)));
+  },
+  'en el equipo "{e}" escribo "{c}"'.mapper(): (_, ctx) async {
+    await _tocar(find.widgetWithText(ChoiceChip, ctx.arg<String>(0)));
+    await probador.enterText(find.byKey(const ValueKey('repara_comandos')), ctx.arg<String>(1).split(';').join('\n'));
+    await probador.pumpAndSettle();
+  },
+  'no veo la solución'.mapper(): (_, ctx) async {
+    expect(find.byType(TarjetaHallazgo), findsNothing);
+  },
+  'veo la solución'.mapper(): (_, ctx) async {
+    expect(find.byType(TarjetaHallazgo), findsOneWidget);
+  },
+  'la configuración de "{e}" muestra "{t}"'.mapper(): (_, ctx) async {
+    final config = probador.widget<SelectableText>(find.byKey(ValueKey('repara_config_${ctx.arg<String>(0)}')));
+    expect(config.data!.split('\n'), contains(ctx.arg<String>(1)));
+  },
   'hay {n} causas para elegir'.mapper(types: {'n': int}): (_, ctx) async {
     expect(_textosCausas().toSet(), hasLength(ctx.arg<int>(0)));
   },
@@ -93,4 +113,5 @@ final _pasos = StepRegistry<void>.fromMap({
 
 Future<void> main() async {
   await correrFeature('t09_repara_pantalla.feature', _pasos);
+  await correrFeature('t11_repara_nivel2.feature', _pasos);
 }

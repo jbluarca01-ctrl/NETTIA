@@ -91,3 +91,9 @@ EjercicioRepara ejercicioAlAzar(Random rnd) {
   final segmento = plan.segmentos[rnd.nextInt(plan.segmentos.length)];
   return armarEjercicio(plan, falla, segmento, rnd);
 }
+
+/// Hallazgos del auditor en todas las [configs] (nivel 2, SPEC-002): vacío
+/// cuando la red quedó reparada.
+List<Hallazgo> auditarTodas(List<ConfigEquipo> configs, PlanRed plan) => [
+  for (final c in configs) ...auditarConfig(c.texto, plan),
+];
