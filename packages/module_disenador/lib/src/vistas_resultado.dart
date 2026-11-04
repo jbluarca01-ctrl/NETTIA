@@ -206,12 +206,13 @@ class VistaAuditar extends StatelessWidget {
         ),
       ];
     }
-    return [for (final x in h) _TarjetaHallazgo(x)];
+    return [for (final x in h) TarjetaHallazgo(x)];
   }
 }
 
-class _TarjetaHallazgo extends StatelessWidget {
-  const _TarjetaHallazgo(this.h);
+/// Un hallazgo del auditor: gravedad, mensaje y comandos que lo corrigen.
+class TarjetaHallazgo extends StatelessWidget {
+  const TarjetaHallazgo(this.h, {super.key});
 
   final Hallazgo h;
 

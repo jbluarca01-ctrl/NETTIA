@@ -4,10 +4,12 @@ import 'logic/auditor.dart';
 import 'logic/formulario.dart';
 import 'logic/generador.dart';
 import 'logic/plan_red.dart';
+import 'repara_tab.dart';
 import 'vistas_resultado.dart';
 
 /// Pantalla del Diseñador de red: en "Datos" se escriben los requisitos y al
-/// tocar Diseñar se llenan Plan, Configuración, Verificación y Auditar.
+/// tocar Diseñar se llenan Plan, Configuración, Verificación y Auditar;
+/// "Repara la red" es práctica independiente del diseño (SPEC-001).
 class DisenadorScreen extends StatefulWidget {
   const DisenadorScreen({super.key});
 
@@ -27,6 +29,7 @@ class _DisenadorScreenState extends State<DisenadorScreen>
     'Configuración',
     'Verificación',
     'Auditar',
+    'Repara la red',
   ];
 
   late final TabController _tabs = TabController(
@@ -154,6 +157,7 @@ class _DisenadorScreenState extends State<DisenadorScreen>
               VistaConfiguracion(d),
               VistaVerificacion(d),
               VistaAuditar(d, _auditoria, _hallazgos, onAuditar: _auditar),
+              const RepararTab(),
             ],
           ),
         ),
