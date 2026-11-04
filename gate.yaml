@@ -3,13 +3,13 @@ base_diff: HEAD
 puertas:
   tests:
     {
-      comando: "flutter test --file-reporter=json:reports/tests.json",
+      comando: "flutter test --coverage --file-reporter=json:reports/tests.json",
       formato: dart-json,
       reporte: reports/tests.json,
     }
   cobertura:
     {
-      comando: "flutter test --coverage",
+      comando: "flutter test --coverage --file-reporter=json:reports/tests.json",
       formato: lcov,
       reporte: coverage/lcov.info,
     }
