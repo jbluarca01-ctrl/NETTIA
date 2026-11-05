@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gherkart/gherkart.dart';
 import 'package:module_disenador/module_disenador.dart';
+import 'package:module_disenador/src/logic/doctor_rutas.dart';
 import 'package:module_disenador/src/logic/multisede.dart';
 import 'package:nettia_core/nettia_core.dart';
 
@@ -123,6 +124,14 @@ final _pasos = StepRegistry<void>.fromMap({
   'el campo "{k}" dice "{t}"'.mapper(): (_, ctx) async {
     expect(probador.widget<TextField>(find.byKey(ValueKey(ctx.arg<String>(0)))).controller!.text, ctx.arg<String>(1));
   },
+  // SPEC-004 T5 (t19_pantalla_doctor.feature).
+  'copio también la configuración de "{e}"'.mapper(): (_, ctx) async {
+    _copiada = '${_copiada!}\n${_configuracion(ctx.arg<String>(0))}';
+  },
+  '"{t}" está elegido para revisar'.mapper(): (_, ctx) async {
+    final boton = probador.widget<SegmentedButton<ModoRutas>>(find.byType(SegmentedButton<ModoRutas>));
+    expect([for (final s in boton.segments) if (boton.selected.contains(s.value)) (s.label! as Text).data], [ctx.arg<String>(0)]);
+  },
   'la etiqueta del campo "{k}" es "{t}"'.mapper(): (_, ctx) async {
     expect(probador.widget<TextField>(find.byKey(ValueKey(ctx.arg<String>(0)))).decoration!.labelText, ctx.arg<String>(1));
   },
@@ -150,4 +159,5 @@ Future<void> main() async {
   setUp(() => _copiada = null);
   await correrFeature('t05_pantalla.feature', _pasos);
   await correrFeature('t15_pantalla_multisede.feature', _pasos);
+  await correrFeature('t19_pantalla_doctor.feature', _pasos);
 }

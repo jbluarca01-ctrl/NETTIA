@@ -60,7 +60,7 @@ Feature: Pantalla del Diseñador con varios routers
     And toco "Diseñar"
     Then veo "Escribe la red de los enlaces entre routers, p. ej. 10.0.0.0/30."
 
-  Scenario: Auditar la configuración de R2 usa el plan de la sede 2 (SPEC-003-RF15)
+  Scenario: Auditar la configuración de R2 usa el plan de la sede 2 (SPEC-003-RF15, SPEC-004-RF12)
     When elijo "2"
     And escribo "192.168.20.0/24" en la clave "sede2_red"
     And escribo "A" en la clave "sede2_nombre_1"
@@ -72,7 +72,8 @@ Feature: Pantalla del Diseñador con varios routers
     And abro la pestaña "Auditar"
     And pego lo copiado
     And toco "Auditar"
-    Then veo "Sin diferencias con el plan."
+    Then veo "R2 · running-config"
+    And veo "Sin diferencias."
 
   Scenario: Con tres routers se avisa de G0/0/2 y al bajar a dos se va la sede 3 (SPEC-003-RF14)
     When elijo "3"

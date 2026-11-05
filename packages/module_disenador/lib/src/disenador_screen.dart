@@ -5,8 +5,11 @@ import 'logic/formulario.dart';
 import 'logic/generador.dart';
 import 'logic/plan_red.dart';
 import 'campos.dart';
+import 'logic/doctor_rutas.dart';
+import 'logic/entrada_doctor.dart';
 import 'repara_tab.dart';
 import 'sede_extra.dart';
+import 'vista_doctor.dart';
 import 'vistas_resultado.dart';
 
 /// Pantalla del Diseñador de red: en "Datos" se escriben los requisitos y al
@@ -62,6 +65,11 @@ class _DisenadorScreenState extends State<DisenadorScreen>
   /// Hallazgos de la última auditoría; se descartan al diseñar de nuevo.
   List<Hallazgo>? _hallazgos;
 
+  /// Doctor de redes (SPEC-004): modo elegido en Auditar (`null` = el del
+  /// diseño) y último resultado; los dos se descartan al diseñar de nuevo.
+  ModoRutas? _modoDoctor;
+  ResultadoDoctor? _doctor;
+
   static const int _maxSwitches = 3;
   static const int _maxRouters = 6;
 
@@ -112,6 +120,8 @@ class _DisenadorScreenState extends State<DisenadorScreen>
         _diseno = d;
         _error = null;
         _hallazgos = null;
+        _modoDoctor = null;
+        _doctor = null;
       });
       _tabs.animateTo(1);
     } on DisenoException catch (e) {
@@ -167,6 +177,22 @@ class _DisenadorScreenState extends State<DisenadorScreen>
   void _auditar(PlanRed plan) =>
       setState(() => _hallazgos = auditarConfig(_auditoria.text, plan));
 
+  /// Modo del doctor: el elegido en Auditar o, si no, el del diseño.
+  ModoRutas _modo(RedMultisede red) => _modoDoctor ?? modoDe(red.enrutamiento);
+
+  /// Pestaña Auditar: con varios routers, el doctor de redes (SPEC-004).
+  Widget _auditarVista(Diseno? d) {
+    final red = d?.red;
+    if (red == null) return VistaAuditar(d, _auditoria, _hallazgos, onAuditar: _auditar);
+    return VistaDoctor(
+      _auditoria,
+      _doctor,
+      _modo(red),
+      onModo: (m) => setState(() => _modoDoctor = m),
+      onRevisar: () => setState(() => _doctor = revisarRed(_auditoria.text, d!, _modo(red))),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final d = _diseno;
@@ -185,7 +211,7 @@ class _DisenadorScreenState extends State<DisenadorScreen>
               VistaPlan(d),
               VistaConfiguracion(d),
               VistaVerificacion(d),
-              VistaAuditar(d, _auditoria, _hallazgos, onAuditar: _auditar),
+              _auditarVista(d),
               const RepararTab(),
             ],
           ),

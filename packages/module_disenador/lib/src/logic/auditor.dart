@@ -5,6 +5,7 @@ library;
 
 import 'generador.dart';
 import 'ip.dart';
+import 'lectura_config.dart';
 import 'plan_red.dart';
 
 enum Gravedad { critico, aviso }
@@ -16,64 +17,9 @@ class Hallazgo {
   final List<String> correccion;
 }
 
-/// La running-config dividida en bloques.
-class _Config {
-  final interfaces = <String, List<String>>{};
-  final pools = <String, List<String>>{};
-  final globales = <String>[];
-
-  bool _alguna(String prefijo) =>
-      interfaces.values.any((ls) => ls.any((l) => l.startsWith(prefijo)));
-  bool get tieneIp => _alguna('ip address ');
-  bool get tieneSwitch => _alguna('switchport ');
-  bool get vacia => !tieneIp && pools.isEmpty && !tieneSwitch;
-
-  /// Abre el bloque de [linea] (interfaz o pool) o la guarda como global.
-  List<String>? abrir(String linea) {
-    if (linea.startsWith('interface ')) {
-      return interfaces[linea.substring(10).trim()] = [];
-    }
-    if (linea.startsWith('ip dhcp pool ')) {
-      return pools[linea.substring(13).trim()] = [];
-    }
-    globales.add(linea);
-    return null;
-  }
-}
-
-_Config _leer(String texto) {
-  final c = _Config();
-  List<String>? actual;
-  for (final cruda in texto.split('\n')) {
-    final linea = cruda.trimRight();
-    if (_ignorada(linea)) continue;
-    if (linea.startsWith(' ')) {
-      actual?.add(linea.trim());
-    } else {
-      actual = c.abrir(linea.trim());
-    }
-  }
-  return c;
-}
-
-bool _ignorada(String linea) => linea.trim().isEmpty || linea.startsWith('!');
-
-String? _valor(List<String> lineas, String prefijo) {
-  for (final l in lineas) {
-    if (l.startsWith(prefijo)) return l.substring(prefijo.length).trim();
-  }
-  return null;
-}
-
-/// Valor numérico de la primera línea que empieza con [prefijo].
-int? _entero(List<String> lineas, String prefijo) {
-  final v = _valor(lineas, prefijo);
-  return v == null ? null : int.tryParse(v);
-}
-
 /// Hallazgos de [runningConfig] frente a [plan]; vacío si todo coincide.
 List<Hallazgo> auditarConfig(String runningConfig, PlanRed plan) {
-  final c = _leer(runningConfig);
+  final c = leerConfig(runningConfig);
   if (c.vacia) {
     return const [
       Hallazgo(
@@ -94,7 +40,7 @@ List<Hallazgo> auditarConfig(String runningConfig, PlanRed plan) {
   ];
 }
 
-List<Hallazgo> _fisicasApagadas(_Config c) {
+List<Hallazgo> _fisicasApagadas(ConfigLeida c) {
   final fisicas = {
     for (final n in c.interfaces.keys)
       if (n.contains('.')) n.split('.').first,
@@ -111,9 +57,9 @@ List<Hallazgo> _fisicasApagadas(_Config c) {
   ];
 }
 
-List<Hallazgo> _gateway(_Config c, SegmentoPlan s) {
+List<Hallazgo> _gateway(ConfigLeida c, SegmentoPlan s) {
   for (final MapEntry(key: nombre, value: lineas) in c.interfaces.entries) {
-    final ip = _valor(lineas, 'ip address ')?.split(' ');
+    final ip = valorDe(lineas, 'ip address ')?.split(' ');
     if (ip != null && ip.first == s.gateway) {
       return _revisarGateway(nombre, lineas, ip, s);
     }
@@ -158,7 +104,7 @@ List<Hallazgo> _revisarGateway(
   ];
 }
 
-List<String> _interfazFaltante(_Config c, SegmentoPlan s) {
+List<String> _interfazFaltante(ConfigLeida c, SegmentoPlan s) {
   final sub = c.interfaces.keys.where((n) => n.contains('.'));
   final ip = 'ip address ${s.gateway} ${s.mascara}';
   if (sub.isEmpty) return ['interface Vlan${s.vlan}', ip, 'no shutdown'];
@@ -170,7 +116,7 @@ List<String> _interfazFaltante(_Config c, SegmentoPlan s) {
   ];
 }
 
-List<Hallazgo> _dhcp(_Config c, SegmentoPlan s) {
+List<Hallazgo> _dhcp(ConfigLeida c, SegmentoPlan s) {
   final red = 'network ${s.red} ${s.mascara}';
   final pool = c.pools.entries.where((e) => e.value.contains(red)).firstOrNull;
   if (pool == null) {
@@ -197,7 +143,7 @@ List<Hallazgo> _defaultRouter(
   List<String> lineas,
   SegmentoPlan s,
 ) {
-  final router = _valor(lineas, 'default-router ');
+  final router = valorDe(lineas, 'default-router ');
   return [
     if (router != s.gateway)
       Hallazgo(
@@ -234,7 +180,7 @@ List<Hallazgo> _exclusiones(List<RangoIp> excluidas, SegmentoPlan s) {
   ];
 }
 
-List<RangoIp> _excluidas(_Config c) {
+List<RangoIp> _excluidas(ConfigLeida c) {
   const prefijo = 'ip dhcp excluded-address ';
   return [
     for (final g in c.globales)
@@ -256,7 +202,7 @@ bool _cubierto(RangoIp r, List<RangoIp> excluidas) {
   return true;
 }
 
-List<Hallazgo> _switch(_Config c, PlanRed plan) {
+List<Hallazgo> _switch(ConfigLeida c, PlanRed plan) {
   final vlans = {for (final s in plan.segmentos) s.vlan};
   final acceso = <String, int>{
     for (final MapEntry(key: nombre, value: lineas) in c.interfaces.entries)
@@ -291,11 +237,11 @@ bool _esTroncal(List<String> lineas) =>
     lineas.contains('switchport mode trunk');
 
 int? _vlanAcceso(List<String> lineas) =>
-    _entero(lineas, 'switchport access vlan ');
+    enteroDe(lineas, 'switchport access vlan ');
 
 List<Hallazgo> _troncal(String nombre, List<String> lineas, PlanRed plan) {
   final nativaPlan = plan.opciones.vlanNativa;
-  final nativa = _entero(lineas, 'switchport trunk native vlan ') ?? 1;
+  final nativa = enteroDe(lineas, 'switchport trunk native vlan ') ?? 1;
   final permitidas = _permitidas(lineas);
   return [
     if (nativa != nativaPlan)

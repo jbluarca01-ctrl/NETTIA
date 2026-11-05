@@ -208,17 +208,7 @@ class VistaAuditar extends StatelessWidget {
     (d) => [
       const Text('Pega el show running-config de un equipo de la red.'),
       const SizedBox(height: _hueco),
-      TextField(
-        key: const ValueKey('auditar_texto'),
-        controller: texto,
-        minLines: 6,
-        maxLines: 14,
-        style: _consola,
-        decoration: const InputDecoration(
-          labelText: 'running-config',
-          border: OutlineInputBorder(),
-        ),
-      ),
+      campoPegado(texto, 'running-config'),
       const SizedBox(height: _hueco),
       FilledButton(
         onPressed: () => onAuditar(d.planPara(texto.text)),
@@ -242,6 +232,16 @@ class VistaAuditar extends StatelessWidget {
     return [for (final x in h) TarjetaHallazgo(x)];
   }
 }
+
+/// Cuadro donde se pega lo que muestra un equipo (Auditar y el doctor).
+Widget campoPegado(TextEditingController texto, String etiqueta) => TextField(
+  key: const ValueKey('auditar_texto'),
+  controller: texto,
+  minLines: 6,
+  maxLines: 14,
+  style: _consola,
+  decoration: InputDecoration(labelText: etiqueta, border: const OutlineInputBorder()),
+);
 
 /// Un hallazgo del auditor: gravedad, mensaje y comandos que lo corrigen.
 class TarjetaHallazgo extends StatelessWidget {
