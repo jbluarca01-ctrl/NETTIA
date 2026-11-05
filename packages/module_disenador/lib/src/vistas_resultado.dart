@@ -60,6 +60,24 @@ String nombreEnrutamiento(Enrutamiento e) => switch (e) {
   Enrutamiento.ospf => 'OSPF',
 };
 
+/// Cuándo usar cada enrutamiento (nota pedida el 2026-11-04), debajo del
+/// selector del Diseñador.
+const notaEnrutamiento = [
+  'Si el enunciado dice qué enrutamiento usar, usa ese.',
+  'Estática resumida: 2 o 3 routers y las redes de cada sede son contiguas. Una sola ruta por sede.',
+  'Estática por subred: las redes de una sede no se pueden resumir, o el ejercicio pide una ruta por cada red.',
+  'OSPF: 4 o más routers, una red que va a crecer, o el enunciado pide enrutamiento dinámico. Los routers aprenden las redes solos.',
+];
+
+/// La [notaEnrutamiento] con su título, en letra chica.
+Widget vistaNotaEnrutamiento(ThemeData tema) => Column(
+  crossAxisAlignment: CrossAxisAlignment.start,
+  children: [
+    Text('¿Cuál elegir?', style: tema.textTheme.labelLarge),
+    for (final linea in notaEnrutamiento) Text(linea, style: tema.textTheme.bodySmall),
+  ],
+);
+
 /// Con varios routers (SPEC-003 RF15): el plan de cada sede con su
 /// resumen, los enlaces entre routers y el enrutamiento.
 List<Widget> _planMultisede(BuildContext context, RedMultisede red) {

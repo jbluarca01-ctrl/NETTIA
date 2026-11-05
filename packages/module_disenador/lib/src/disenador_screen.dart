@@ -269,6 +269,7 @@ class _DisenadorScreenState extends State<DisenadorScreen>
     _selector<Enrutamiento>(_enrutamiento, {
       for (final e in Enrutamiento.values) e: nombreEnrutamiento(e),
     }, (v) => _enrutamiento = v),
+    vistaNotaEnrutamiento(tema),
     if (_routers > 2)
       Padding(
         padding: const EdgeInsets.only(bottom: _hueco),

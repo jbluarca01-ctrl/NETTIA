@@ -26,6 +26,17 @@ Feature: Pantalla del Diseñador con varios routers
     And no veo "Sede 3 (R3)"
     And la etiqueta del campo "red_enlaces" es "Red de enlaces entre routers"
 
+  Scenario: Debajo del enrutamiento, cuándo usar cada uno (nota 2026-11-04)
+    When elijo "2"
+    Then veo "¿Cuál elegir?"
+    And veo "Si el enunciado dice qué enrutamiento usar, usa ese."
+    And veo "Estática resumida: 2 o 3 routers y las redes de cada sede son contiguas. Una sola ruta por sede."
+    And veo "Estática por subred: las redes de una sede no se pueden resumir, o el ejercicio pide una ruta por cada red."
+    And veo "OSPF: 4 o más routers, una red que va a crecer, o el enunciado pide enrutamiento dinámico. Los routers aprenden las redes solos."
+
+  Scenario: Con un router no hay nota de enrutamiento (nota 2026-11-04)
+    Then no veo "¿Cuál elegir?"
+
   Scenario: Dos routers diseñados: plan por sede, enlaces y configuración (SPEC-003-RF14, RF15)
     When elijo "2"
     And escribo "192.168.20.0/24" en la clave "sede2_red"
