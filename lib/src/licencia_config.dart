@@ -1,0 +1,32 @@
+// Configuración de la licencia de venta (SPEC-005).
+import 'package:flutter/foundation.dart';
+
+/// Clave pública Ed25519 de venta (32 bytes). La entrega Jairo desde su
+/// licenciador. Vacía = el APK de venta no acepta ninguna licencia y
+/// `scripts/build_venta.ps1` se niega a compilar.
+const List<int> clavePublicaVenta = [];
+
+/// Huella SHA-256 del certificado de publicación de Jairo (`AA:BB:…`).
+/// Vacía = el APK de venta se bloquea siempre y el script no compila.
+const String huellaVenta = '';
+
+/// Contacto para comprar o pedir soporte; vacío = no se muestra.
+const String contactoCompra = '';
+
+/// Clave pública de PRUEBA (semilla 0..31, conocida): solo para debug y
+/// tests. En release nunca se usa.
+const List<int> clavePublicaPrueba = [
+  3, 161, 7, 191, 243, 206, 16, 190, 29, 112, 221, 24, 231, 75, 192, 153, //
+  103, 228, 214, 48, 155, 165, 13, 95, 29, 220, 134, 100, 18, 85, 49, 184,
+];
+
+/// La clave que usa esta compilación.
+const List<int> clavePublicaActiva =
+    kReleaseMode ? clavePublicaVenta : clavePublicaPrueba;
+
+/// La huella que se exige: solo en release.
+const String? huellaExigidaActiva = kReleaseMode ? huellaVenta : null;
+
+/// `true` si la clave y la huella de venta tienen forma válida.
+bool ventaLista({required List<int> clave, required String huella}) =>
+    clave.length == 32 && huella.isNotEmpty;

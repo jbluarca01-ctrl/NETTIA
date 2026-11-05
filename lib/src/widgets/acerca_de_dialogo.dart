@@ -13,7 +13,17 @@ class AcercaDeDialogo extends StatelessWidget {
         borderRadius: BorderRadius.circular(NetworkTheme.radiusLg),
       ),
       title: _titulo(Theme.of(context)),
-      content: _contenido,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _contenido,
+          if (GuardianLicencia.instance.nombre case final nombre?) ...[
+            const SizedBox(height: 8),
+            Text('Licenciada a: $nombre'),
+          ],
+        ],
+      ),
       actions: [
         TextButton(
           onPressed: () => _abrirLicencias(context),

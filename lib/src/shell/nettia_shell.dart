@@ -86,6 +86,8 @@ class _NettiaShellState extends State<NettiaShell> {
           onSelectModule: (m) {
             // Guarda de código: un módulo oculto para el perfil no se abre.
             if (_perfil.puedeUsar(m)) setState(() => _actual = m);
+            // Cada cambio de módulo vuelve a revisar licencia y firma.
+            GuardianLicencia.instance.revisar();
           },
           onOpenSettings: _abrirConfiguracion,
         ),

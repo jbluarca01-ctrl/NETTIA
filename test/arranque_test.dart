@@ -3,6 +3,8 @@ import 'package:nettia/main.dart';
 import 'package:nettia_core/nettia_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'licencia_prueba.dart';
+
 Future<void> _avanzar(WidgetTester tester, {int ms = 2200}) async {
   for (var t = 0; t < ms; t += 100) {
     await tester.pump(const Duration(milliseconds: 100));
@@ -12,7 +14,7 @@ Future<void> _avanzar(WidgetTester tester, {int ms = 2200}) async {
 void main() {
   testWidgets('primer arranque: solo la selección de perfil, antes del splash',
       (tester) async {
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({...usarTelefonoDePrueba()});
     await UserProfileService.instance.load();
 
     await tester.pumpWidget(const NettiaApp());
@@ -37,7 +39,10 @@ void main() {
   });
 
   testWidgets('con perfil guardado no se muestra la selección', (tester) async {
-    SharedPreferences.setMockInitialValues({'nettia_user_profile': 'profesional'});
+    SharedPreferences.setMockInitialValues({
+      'nettia_user_profile': 'profesional',
+      ...usarTelefonoDePrueba(),
+    });
     await UserProfileService.instance.load();
 
     await tester.pumpWidget(const NettiaApp());

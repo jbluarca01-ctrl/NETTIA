@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:nettia_ai/nettia_ai.dart';
 import 'package:nettia_core/nettia_core.dart';
 
+import 'src/licencia_config.dart';
 import 'src/screens/nettia_splash_screen.dart';
 import 'src/shell/nettia_shell.dart';
 
@@ -12,6 +13,11 @@ Future<void> main() async {
   await UserProfileService.instance.load();
   await FeedbackService.instance.load();
   await HistorialConversacionesService.instance.load();
+  GuardianLicencia.instance = GuardianLicencia(
+    fuente: const FuenteTelefonoAndroid(),
+    clavePublica: clavePublicaActiva,
+    huellaExigida: huellaExigidaActiva,
+  );
   runApp(const NettiaApp());
 }
 
@@ -52,6 +58,12 @@ class _NettiaAppState extends State<NettiaApp> {
       // Textos del sistema (diálogos, selectores, menús) en español.
       supportedLocales: const [Locale('es')],
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
+      // Sin licencia activa no se ve nada más que la activación (SPEC-005).
+      builder: (_, child) => PuertaLicencia(
+        guardian: GuardianLicencia.instance,
+        contacto: contactoCompra,
+        child: child!,
+      ),
       // El perfil (estudiante/profesional) va antes que todo lo demás: sin
       // perfil guardado no se muestra ni el splash ni el menú.
       home: UserProfileService.instance.hasProfile
