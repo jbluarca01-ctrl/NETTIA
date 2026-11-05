@@ -32,6 +32,7 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   gherkart: ^0.2.1
   shared_preferences: ^2.3.5
+  cryptography: ^2.9.0
 
 flutter:
   uses-material-design: true

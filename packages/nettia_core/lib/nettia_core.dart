@@ -5,6 +5,7 @@ export 'src/contracts/ai_diagnosis_service.dart';
 export 'src/contracts/fuentes_locales.dart';
 export 'src/feedback/feedback_service.dart';
 export 'src/historial/historial_conversaciones_service.dart';
+export 'src/licencia/licencia.dart';
 export 'src/nettia_icons.dart';
 export 'src/profile/profile_selection_screen.dart';
 export 'src/profile/user_profile.dart';
