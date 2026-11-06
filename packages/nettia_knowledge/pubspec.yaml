@@ -13,12 +13,11 @@ dependencies:
     sdk: flutter
   nettia_core:
     path: ../nettia_core
-  sqlite3: ^3.6.0
-  # Sin esta dependencia, package:sqlite3 no tiene el .so nativo para abrir
-  # una base en Android (dlopen falla): causa raíz real de los congelamientos
-  # y cierres reportados en Nettia (ver informes/INFORME_INVESTIGACION_
-  # NETTIA_CONGELAMIENTOS_IA_2026-09-25.md).
-  sqlite3_flutter_libs: ^0.5.32
+  sqlite3: ^3.9.0
+  # Desde sqlite3 3.x el .so nativo para Android lo compilan los build hooks
+  # del propio paquete sqlite3. sqlite3_flutter_libs (que antes lo aportaba,
+  # ver informes/INFORME_INVESTIGACION_NETTIA_CONGELAMIENTOS_IA_2026-09-25.md)
+  # quedó en fin de vida (0.6.0+eol) y se retiró el 2026-11-06.
 
 dev_dependencies:
   flutter_test:
