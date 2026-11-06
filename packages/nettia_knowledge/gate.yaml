@@ -39,3 +39,8 @@ puertas:
       comando: "dart pub global run lakos --no-cycles-allowed lib",
       formato: exit-code,
     }
+  integridad:
+    {
+      comando: "dart --packages=C:/dev/gate/.dart_tool/package_config.json C:/dev/gate/bin/integridad.dart --base main",
+      formato: exit-code,
+    }
