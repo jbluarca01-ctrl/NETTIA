@@ -12,7 +12,7 @@ const String huellaVenta =
     'FC:0D:B7:0C:63:F1:C4:2A:30:B6:AF:61:36:03:BF:39:3F:8C:52:23:75:A2:78:F1:23:2F:F4:A9:45:17:C9:71';
 
 /// Contacto para comprar o pedir soporte; vacío = no se muestra.
-const String contactoCompra = '';
+const String contactoCompra = 'Escríbeme por WhatsApp al +503 7683 5548';
 
 /// Clave pública de PRUEBA (semilla 0..31, conocida): solo para debug y
 /// tests. En release nunca se usa.
