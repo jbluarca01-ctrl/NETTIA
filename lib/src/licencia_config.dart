@@ -8,7 +8,8 @@ const List<int> clavePublicaVenta = [];
 
 /// Huella SHA-256 del certificado de publicación de Jairo (`AA:BB:…`).
 /// Vacía = el APK de venta se bloquea siempre y el script no compila.
-const String huellaVenta = '';
+const String huellaVenta =
+    'FC:0D:B7:0C:63:F1:C4:2A:30:B6:AF:61:36:03:BF:39:3F:8C:52:23:75:A2:78:F1:23:2F:F4:A9:45:17:C9:71';
 
 /// Contacto para comprar o pedir soporte; vacío = no se muestra.
 const String contactoCompra = '';
