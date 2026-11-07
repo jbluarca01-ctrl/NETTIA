@@ -1,0 +1,2 @@
+Padding(padding: EdgeInsets.all(24.0))
+  Text(data: "Nettia no puede abrirse en este teléfono.", textAlign: center)

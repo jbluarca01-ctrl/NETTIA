@@ -74,82 +74,26 @@ class _NettiaShellState extends State<NettiaShell> {
     );
   }
 
+  /// Abre [m] si el perfil lo permite. Cada cambio de módulo vuelve a
+  /// revisar licencia y firma (SPEC-005 RF14).
+  void _seleccionarModulo(NettiaModulo m) {
+    // Guarda de código: un módulo oculto para el perfil no se abre.
+    if (_perfil.puedeUsar(m)) setState(() => _actual = m);
+    GuardianLicencia.instance.revisar();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return NetworkBackdrop(
       child: Scaffold(
         backgroundColor: Colors.transparent,
         drawer: NetworkDrawer(
           profile: _perfil,
           current: _actual,
-          onSelectModule: (m) {
-            // Guarda de código: un módulo oculto para el perfil no se abre.
-            if (_perfil.puedeUsar(m)) setState(() => _actual = m);
-          },
+          onSelectModule: _seleccionarModulo,
           onOpenSettings: _abrirConfiguracion,
         ),
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          leading: Builder(
-            builder: (ctx) => IconButton(
-              icon: const Icon(NettiaIcons.menu),
-              tooltip: 'Menú',
-              onPressed: () => Scaffold.of(ctx).openDrawer(),
-            ),
-          ),
-          title: Row(
-            children: [
-              NettiaLogo(
-                size: 22,
-                color: theme.textTheme.bodyLarge?.color,
-                accent: theme.colorScheme.primary,
-                accent2: theme.colorScheme.tertiary,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  _titulos[_actual]!,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 16,
-                    letterSpacing: 0.3,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            ListenableBuilder(
-              listenable: AiSettingsService.instance,
-              builder: (context, _) {
-                final s = AiSettingsService.instance;
-                final configurado =
-                    s.currentActiveKey.isNotEmpty || !s.activeProvider.usaApi;
-                return IconButton(
-                  tooltip: 'Configuración & Sistema',
-                  onPressed: _abrirConfiguracion,
-                  icon: Stack(
-                    alignment: Alignment.topRight,
-                    children: [
-                      const Icon(NettiaIcons.ajustes),
-                      if (configurado)
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: NetworkTheme.ledGreen,
-                          ),
-                        ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
+        appBar: _barra(Theme.of(context)),
         // IndexedStack conserva el estado de cada módulo (p. ej. el chat).
         body: IndexedStack(
           index: _visibles.indexOf(_actual),
@@ -158,4 +102,68 @@ class _NettiaShellState extends State<NettiaShell> {
       ),
     );
   }
+
+  /// Barra superior: menú, logo con el título del módulo y Configuración.
+  PreferredSizeWidget _barra(ThemeData theme) => AppBar(
+        backgroundColor: Colors.transparent,
+        leading: Builder(
+          builder: (ctx) => IconButton(
+            icon: const Icon(NettiaIcons.menu),
+            tooltip: 'Menú',
+            onPressed: () => Scaffold.of(ctx).openDrawer(),
+          ),
+        ),
+        title: Row(
+          children: [
+            NettiaLogo(
+              size: 22,
+              color: theme.textTheme.bodyLarge?.color,
+              accent: theme.colorScheme.primary,
+              accent2: theme.colorScheme.tertiary,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                _titulos[_actual]!,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 16,
+                  letterSpacing: 0.3,
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [_botonAjustes()],
+      );
+
+  /// Botón de Configuración con un punto verde si la IA está lista.
+  Widget _botonAjustes() => ListenableBuilder(
+        listenable: AiSettingsService.instance,
+        builder: (context, _) {
+          final s = AiSettingsService.instance;
+          final configurado =
+              s.currentActiveKey.isNotEmpty || !s.activeProvider.usaApi;
+          return IconButton(
+            tooltip: 'Configuración & Sistema',
+            onPressed: _abrirConfiguracion,
+            icon: Stack(
+              alignment: Alignment.topRight,
+              children: [
+                const Icon(NettiaIcons.ajustes),
+                if (configurado)
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: NetworkTheme.ledGreen,
+                    ),
+                  ),
+              ],
+            ),
+          );
+        },
+      );
 }

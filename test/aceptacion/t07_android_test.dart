@@ -8,6 +8,7 @@ import 'package:nettia/main.dart';
 import 'package:nettia_core/nettia_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../licencia_prueba.dart';
 import 'comun.dart';
 
 String _texto = '';
@@ -77,9 +78,11 @@ final _pasos = StepRegistry<void>.fromMap({
   'la app arrancada con un perfil guardado'.mapper(): (_, ctx) async {
     SharedPreferences.setMockInitialValues({
       'nettia_user_profile': 'estudiante',
+      ...usarTelefonoDePrueba(),
     });
     await UserProfileService.instance.load();
     await probador.pumpWidget(const NettiaApp());
+    await probador.runAsync(() => Future<void>.delayed(Duration.zero));
     await probador.pump();
   },
   'el botón de cancelar del sistema dice "{t}"'.mapper(): (_, ctx) async {
