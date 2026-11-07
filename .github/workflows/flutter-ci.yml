@@ -9,7 +9,12 @@ on:
 
 jobs:
   analyze-and-test:
-    runs-on: ubuntu-latest
+    # Windows: las imágenes de referencia (golden) se generan en Windows y en
+    # Linux las fuentes se dibujan distinto (2–3 % de píxeles diferentes).
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
     steps:
       - name: Checkout
         uses: actions/checkout@v6
