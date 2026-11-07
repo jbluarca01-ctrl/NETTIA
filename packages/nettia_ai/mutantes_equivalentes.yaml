@@ -1,0 +1,13 @@
+# Mutantes equivalentes aceptados por el gate (ver QUALITY_EXCEPTIONS.md).
+# Ley §4.3/§4.5: ningún agente edita esta lista sin justificación registrada
+# y sin aprobación de Jairo.
+
+- excepcion: 1
+  archivo: lib/src/screens/motor_ia_card.dart
+  regla: motor.llamada.quitar
+  codigo: "super.initState();"
+
+- excepcion: 2
+  archivo: lib/src/screens/motor_ia_card.dart
+  regla: motor.llamada.quitar
+  codigo: "_keyController.dispose();"
