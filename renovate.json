@@ -1,0 +1,24 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "description": "Plan de tecnologías 2026-11-04 punto 7 (orden de Jairo 2026-11-06). Renovate solo abre PRs; nunca hace merge: cada PR pasa por el CI y el gate y lo fusiona Jairo.",
+  "schedule": ["before 6am on monday"],
+  "labels": ["dependencias"],
+  "dependencyDashboard": true,
+  "prConcurrentLimit": 3,
+  "automerge": false,
+  "packageRules": [
+    {
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "dependencias menores y parches"
+    },
+    {
+      "matchUpdateTypes": ["major"],
+      "dependencyDashboardApproval": true
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "groupName": "acciones de GitHub"
+    }
+  ]
+}
