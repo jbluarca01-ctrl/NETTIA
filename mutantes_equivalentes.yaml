@@ -1,0 +1,13 @@
+# Mutantes equivalentes aceptados por el gate (ver QUALITY_EXCEPTIONS.md).
+# Ley §4.3/§4.5: ningún agente edita esta lista sin justificación registrada
+# y sin aprobación de Jairo.
+
+- excepcion: 1
+  archivo: lib/src/shell/nettia_shell.dart
+  regla: motor.if.true
+  codigo: "if (_perfil.puedeUsar(m)) setState(() => _actual = m);"
+
+- excepcion: 2
+  archivo: lib/src/shell/nettia_shell.dart
+  regla: motor.nulo.acceso
+  codigo: "color: theme.textTheme.bodyLarge?.color,"

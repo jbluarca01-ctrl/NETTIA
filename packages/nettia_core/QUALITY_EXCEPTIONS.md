@@ -85,3 +85,23 @@ tras los tests se confirman aquí (línea = archivo original de `lib/src/`).
   un resultado no negativo, igual con divisor negativo.
 - `syntax/ios_syntax.dart:53` — rangos `A-Z` y `a-z` de `[A-Za-z]` alterados:
   el `RegExp` es `caseSensitive: false`, cada rango es redundante con el otro.
+
+## Mutantes equivalentes de la licencia (SPEC-005, 2026-11-06)
+
+Registrados en `mutantes_equivalentes.yaml` (Ley §4.5), aprobados por Jairo junto con el cierre de la activación.
+
+### 1. lib/src/licencia/pantalla_activacion.dart — quitar `super.initState();`
+
+`State.initState()` del framework solo valida el ciclo de vida en modo debug; sin la llamada la puerta revisa la licencia y se dibuja igual. Ningún test de comportamiento lo distingue. Se mantiene porque el framework la exige (`@mustCallSuper`).
+
+### 2. lib/src/licencia/pantalla_activacion.dart — quitar `super.didUpdateWidget(anterior);`
+
+Mismo caso que el 1: la implementación base no hace nada que la puerta use.
+
+### 3. lib/src/licencia/pantalla_activacion.dart — quitar `_texto.dispose();`
+
+Sin `dispose()` el controlador del cuadro de la licencia no se libera: fuga de memoria pequeña, no cambio de comportamiento. Detectarla exige `leak_tracker`, que no es dependencia del paquete.
+
+### 4. lib/src/licencia/licencia.dart — `var bits = 0;` cambiado a otro entero
+
+`codigoTelefono` desplaza 7 bytes (56 bits) a la izquierda sobre `bits` y luego toma solo los 50 bits bajos (10 letras de 5 bits). El valor inicial solo afecta a los bits 56 en adelante, que nunca se leen: el código del teléfono es el mismo para cualquier valor inicial.
