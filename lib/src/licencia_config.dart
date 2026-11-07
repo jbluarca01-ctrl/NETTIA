@@ -4,7 +4,10 @@ import 'package:flutter/foundation.dart';
 /// Clave pública Ed25519 de venta (32 bytes). La entrega Jairo desde su
 /// licenciador. Vacía = el APK de venta no acepta ninguna licencia y
 /// `scripts/build_venta.ps1` se niega a compilar.
-const List<int> clavePublicaVenta = [];
+const List<int> clavePublicaVenta = [
+  196, 144, 43, 39, 85, 219, 18, 88, 193, 98, 241, 106, 156, 84, 238, 213, //
+  183, 143, 135, 36, 111, 225, 191, 156, 224, 149, 198, 107, 10, 85, 122, 105,
+];
 
 /// Huella SHA-256 del certificado de publicación de Jairo (`AA:BB:…`).
 /// Vacía = el APK de venta se bloquea siempre y el script no compila.
